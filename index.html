@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>3000 Từ Vựng Tiếng Anh – Học thông minh</title>
-  <meta name="description" content="Học 3000 từ vựng tiếng Anh thông dụng (Oxford 3000) bằng flashcard lặp lại ngắt quãng, trắc nghiệm, nghe, gõ chính tả, ghép cặp và luyện phát âm." />
+  <meta name="description" content="Học 3000 từ vựng tiếng Anh thông dụng (Oxford 3000) theo chủ đề và họ từ, lịch ôn FSRS, flashcard, trắc nghiệm, nghe, chính tả, dạng từ, ghép cặp và luyện phát âm." />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="color-scheme" content="light dark" />
   <script>
@@ -19,8 +19,8 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=20261007_v1" />
-  <link rel="stylesheet" href="vocab.css?v=20261007_v1" />
+  <link rel="stylesheet" href="style.css?v=20261008_v2" />
+  <link rel="stylesheet" href="vocab.css?v=20261008_v2" />
 </head>
 <body>
   <div class="app">
@@ -32,7 +32,7 @@
       <div class="top-actions">
         <button type="button" class="btn ghost" id="btnSearch" title="Tra cứu từ (Ctrl+K)" aria-label="Tra cứu từ">🔍</button>
         <button type="button" class="btn ghost" id="btnHelp" title="Cách học hiệu quả" aria-label="Cách học hiệu quả">💡</button>
-        <button type="button" class="btn ghost" id="btnSettings" title="Cài đặt giọng đọc &amp; mục tiêu" aria-label="Cài đặt">⚙️</button>
+        <button type="button" class="btn ghost" id="btnSettings" title="Cài đặt giọng đọc, mục tiêu &amp; lịch ôn" aria-label="Cài đặt">⚙️</button>
         <button type="button" class="btn ghost" id="btnBackup" title="Sao lưu tiến độ" aria-label="Sao lưu tiến độ">☁</button>
         <button type="button" class="btn ghost" id="btnTheme" title="Sáng / Tối" aria-label="Đổi giao diện sáng tối">🌙</button>
       </div>
@@ -49,6 +49,7 @@
               <select id="lessonSel" class="sel" aria-label="Chọn bài"></select>
               <button type="button" class="btn small" id="lessonNext" aria-label="Bài sau">›</button>
             </span>
+            <select id="groupSel" class="sel" aria-label="Chọn nhóm từ" hidden></select>
             <select id="posSel" class="sel" aria-label="Lọc theo từ loại">
               <option value="all">Mọi từ loại</option>
               <option value="n">Danh từ (n)</option>
@@ -65,12 +66,16 @@
         <section id="view" aria-live="polite"></section>
       </main>
 
-      <aside class="side-map" aria-label="Bản đồ bài học">
-        <div class="map-head">
-          <span>Bài học</span>
-          <span class="map-count"><span id="mapCount">0</span> bài</span>
+      <aside class="side-map" aria-label="Bản đồ bài học và chủ đề">
+        <div class="map-toggle" role="tablist">
+          <button type="button" class="chip" data-map="lessons">📚 Bài</button>
+          <button type="button" class="chip" data-map="topics">🗂 Chủ đề</button>
         </div>
-        <div class="map-legend">
+        <div class="map-head">
+          <span id="mapTitle">Bài học</span>
+          <span class="map-count"><span id="mapCount">0</span></span>
+        </div>
+        <div class="map-legend" id="mapLegend">
           <span><i class="dot unseen"></i> chưa học</span>
           <span><i class="dot lv1"></i> đang học</span>
           <span><i class="dot ok"></i> đã thuộc</span>
@@ -81,7 +86,7 @@
 
     <footer class="foot">
       Dữ liệu: danh sách Oxford 3000 kèm nghĩa tiếng Việt từ tài liệu “3000 từ vựng tiếng Anh thông dụng nhất” (Effortless English Club).
-      Phát âm dùng giọng đọc có sẵn của trình duyệt.
+      Lịch ôn dùng thuật toán FSRS. Phát âm dùng giọng đọc có sẵn của trình duyệt.
     </footer>
   </div>
 
@@ -92,7 +97,8 @@
         <h2 id="settingsTitle">Cài đặt</h2>
         <button type="button" class="btn ghost" data-close aria-label="Đóng">✕</button>
       </header>
-      <label class="sync-field">Giọng đọc
+      <h3 class="set-h">🔊 Giọng đọc</h3>
+      <label class="sync-field">Giọng
         <select id="setAccent" class="sel">
           <option value="en-US">Anh – Mỹ (US)</option>
           <option value="en-GB">Anh – Anh (UK)</option>
@@ -104,16 +110,50 @@
       <label class="sync-field">Tốc độ đọc: <span id="setRateVal">0.9</span>
         <input type="range" id="setRate" min="0.5" max="1.3" step="0.05" />
       </label>
-      <label class="sync-field">Số từ mới mỗi ngày
-        <input type="number" id="setGoal" class="num-input" min="5" max="200" step="5" />
+      <p class="modal-lead" id="voiceNote"></p>
+
+      <h3 class="set-h">📅 Mục tiêu mỗi ngày</h3>
+      <div class="set-row">
+        <label class="sync-field">Từ mới mỗi ngày
+          <input type="number" id="setGoal" class="num-input" min="0" max="200" step="5" />
+        </label>
+        <label class="sync-field">Tối đa lượt ôn mỗi ngày
+          <input type="number" id="setMaxReviews" class="num-input" min="10" max="9999" step="10" />
+        </label>
+      </div>
+      <div class="set-row">
+        <label class="sync-field">Thứ tự từ mới
+          <select id="setNewOrder" class="sel">
+            <option value="alpha">Theo bảng chữ cái</option>
+            <option value="topic">Theo chủ đề</option>
+            <option value="random">Ngẫu nhiên (cố định trong ngày)</option>
+          </select>
+        </label>
+        <label class="sync-field">Ngày học mới bắt đầu lúc
+          <select id="setDayStart" class="sel">
+            <option value="0">0 giờ</option>
+            <option value="2">2 giờ sáng</option>
+            <option value="3">3 giờ sáng</option>
+            <option value="4">4 giờ sáng</option>
+            <option value="5">5 giờ sáng</option>
+            <option value="6">6 giờ sáng</option>
+          </select>
+        </label>
+      </div>
+
+      <h3 class="set-h">🧠 Lịch ôn (FSRS)</h3>
+      <label class="sync-field">Tỉ lệ ghi nhớ mong muốn: <span id="setRetentionVal">90%</span>
+        <input type="range" id="setRetention" min="0.8" max="0.97" step="0.01" />
       </label>
+      <p class="modal-lead" id="retentionNote"></p>
+
+      <h3 class="set-h">⚙️ Khác</h3>
       <label class="sync-check"><input type="checkbox" id="setAutoSpeak" /> Tự đọc từ khi hiện câu hỏi</label>
       <label class="sync-check"><input type="checkbox" id="setAutoNext" /> Tự chuyển câu khi trả lời đúng</label>
       <div class="sync-actions">
         <button type="button" class="btn" id="btnTestVoice">🔊 Nghe thử</button>
         <button type="button" class="btn primary" data-close>Xong</button>
       </div>
-      <p class="modal-lead" id="voiceNote"></p>
     </div>
   </div>
 
@@ -124,14 +164,18 @@
         <h2 id="backupTitle">Sao lưu tiến độ</h2>
         <button type="button" class="btn ghost" data-close aria-label="Đóng">✕</button>
       </header>
-      <p class="modal-lead">Tiến độ được lưu trong trình duyệt này. Xuất ra file để chuyển sang máy khác, rồi nhập lại ở đó.</p>
+      <p class="modal-lead" id="storageInfo"></p>
+      <p class="modal-lead">Tiến độ (lịch ôn, nhật ký, ghi chú, bộ từ) lưu trong trình duyệt này. Xuất ra file để chuyển sang máy khác.
+        <b>Nhập &amp; gộp</b> giữ bản ôn gần nhất của từng từ, nên học trên nhiều máy rồi gộp lại không bị mất dữ liệu.</p>
       <div class="sync-actions">
         <button type="button" class="btn primary" id="btnExport">⬇ Xuất file</button>
-        <button type="button" class="btn" id="btnImport">⬆ Nhập file</button>
+        <button type="button" class="btn" id="btnImport">⬆ Nhập &amp; gộp</button>
+        <button type="button" class="btn" id="btnImportReplace">⬆ Nhập &amp; thay thế</button>
         <input type="file" id="importFile" accept="application/json,.json" hidden />
       </div>
       <hr class="modal-hr" />
       <div class="sync-actions">
+        <button type="button" class="btn" id="btnRestoreSnapshot" hidden>↺ Khôi phục bản tự động</button>
         <button type="button" class="btn danger" id="btnResetProgress">Xóa toàn bộ tiến độ</button>
       </div>
       <p class="sync-status" id="backupStatus" hidden></p>
@@ -146,27 +190,25 @@
         <button type="button" class="btn ghost" data-close aria-label="Đóng">✕</button>
       </header>
       <div class="help-body">
-        <p><b>1. Mỗi ngày một ít, đều đặn.</b> Chọn phạm vi <i>📅 Hôm nay</i>. Web sẽ trộn các từ đến hạn ôn với một số từ mới (mặc định 20 từ, chỉnh trong ⚙️). Học 15–20 phút mỗi ngày hiệu quả hơn học dồn một buổi.</p>
-        <p><b>2. Lặp lại ngắt quãng (Flashcard).</b> Lật thẻ rồi tự chấm: <i>Quên / Khó / Nhớ / Dễ</i>. Từ càng nhớ chắc thì càng lâu mới gặp lại (1 → 2 → 4 → 7 → 15 → 30 → 60 ngày). Từ quên sẽ quay lại ngay trong phiên.</p>
-        <p><b>3. Chủ động nhớ lại, đừng chỉ đọc.</b> Trước khi lật thẻ hay chọn đáp án, hãy tự nói nghĩa hoặc cách viết trong đầu. Việc cố nhớ lại giúp từ in sâu hơn.</p>
-        <p><b>4. Học bằng nhiều giác quan.</b> Kết hợp nhiều chế độ cho cùng một bài:
-          🔤 nhận diện nghĩa → 💬 nhớ ra từ → 🎧 nghe → ✍️ gõ chính tả → 🎙 nói. Mỗi cách củng cố một đường nhớ khác nhau.</p>
-        <p><b>5. Tập trung vào từ khó.</b> Phạm vi <i>Hay sai</i> gom các từ bạn từng trả lời sai, xếp từ sai nhiều nhất lên đầu. Cuối mỗi phiên có nút <i>Ôn lại từ sai</i>.</p>
-        <p><b>6. Học theo bài nhỏ.</b> 3000 từ được chia thành các bài 30 từ (bản đồ bên phải). Ô chuyển xanh khi bạn đã thuộc phần lớn bài đó.</p>
-        <p><b>7. Đặt từ vào ngữ cảnh.</b> Sau mỗi câu, mở <i>Cambridge</i>, <i>Oxford</i> để xem ví dụ, hoặc <i>YouGlish</i> để nghe người bản xứ dùng từ trong video thật. Tự đặt một câu với từ đó.</p>
+        <p><b>1. Mỗi ngày một ít, đều đặn.</b> Chọn phạm vi <i>📅 Hôm nay</i>: web gom các từ đến hạn ôn và thêm một số từ mới (mặc định 20, chỉnh trong ⚙️). Học 15–20 phút mỗi ngày hiệu quả hơn học dồn một buổi.</p>
+        <p><b>2. Ôn đúng lúc sắp quên (thuật toán FSRS).</b> Mỗi từ có <i>độ bền</i> (bao nhiêu ngày thì xác suất nhớ còn 90%) và <i>độ khó</i> riêng với bạn. Web hẹn ngày ôn để bạn ôn đúng lúc sắp quên. Từ nhớ chắc sẽ giãn lịch ra 4 → 13 → 44 ngày…, từ hay quên sẽ gặp lại sớm hơn. Ở Flashcard, mỗi nút chấm có ghi lần ôn kế tiếp.</p>
+        <p><b>3. Trả lời trung thực.</b> Chọn <i>Quên</i> khi không nhớ, <i>Khó</i> khi nhớ chật vật, <i>Nhớ</i> khi nhớ được, <i>Dễ</i> khi nhớ ngay. Ở các chế độ luyện tập: trả lời sai = Quên, đúng nhưng quá chậm hoặc có dùng gợi ý = Khó. Bấm nhầm thì dùng ↶ (Ctrl+Z) để hoàn tác.</p>
+        <p><b>4. Học theo nhóm.</b> Mục 📂 <i>Nhóm từ</i> chia 3000 từ theo <b>gần 30 chủ đề</b> (ăn uống, công việc, cảm xúc…) và <b>họ từ</b> (success → successful → successfully). Từ cùng chủ đề hay cùng họ dễ gợi nhớ lẫn nhau. Bạn cũng có thể tự tạo <i>bộ từ</i> riêng.</p>
+        <p><b>5. Trộn nhiều cách học.</b> 🎲 <i>Trộn ngẫu nhiên</i> chọn dạng bài theo mức độ nhớ: từ mới thì nhận diện (Anh → Việt, nghe), từ đã quen thì phải tự nhớ ra (gõ từ, nghe – viết, dạng từ). Đổi dạng bài liên tục giúp nhớ chắc hơn học một kiểu.</p>
+        <p><b>6. Đặt từ vào ngữ cảnh và tự ghi chú.</b> Sau mỗi câu, mở <i>Cambridge</i> / <i>Oxford</i> xem ví dụ, hoặc <i>YouGlish</i> để nghe người bản xứ dùng từ. Viết một câu của riêng bạn vào ô <i>📝 Ghi chú</i>; ghi chú cũng tra cứu được trong 📖 Danh sách.</p>
+        <p><b>7. Xử lý “từ cứng đầu”.</b> Từ quên từ 4 lần trở lên được đánh dấu 🐛. Với những từ này, hãy viết mẹo nhớ hoặc liên tưởng hình ảnh rồi luyện riêng trong 📂 Nhóm từ → Bộ từ của tôi.</p>
         <h3>Phím tắt</h3>
         <ul class="kbd-list">
-          <li><kbd>1</kbd>–<kbd>4</kbd> hoặc <kbd>A</kbd>–<kbd>D</kbd>: chọn đáp án · chấm điểm flashcard</li>
-          <li><kbd>Space</kbd>: lật thẻ</li>
-          <li><kbd>Enter</kbd> / <kbd>→</kbd>: câu tiếp theo</li>
-          <li><kbd>R</kbd>: đọc lại từ</li>
+          <li><kbd>1</kbd>–<kbd>4</kbd> hoặc <kbd>A</kbd>–<kbd>D</kbd>: chọn đáp án · chấm Quên/Khó/Nhớ/Dễ ở flashcard</li>
+          <li><kbd>Space</kbd>: lật thẻ · <kbd>Enter</kbd> / <kbd>→</kbd>: câu tiếp theo · <kbd>R</kbd>: đọc lại từ</li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd>: hoàn tác lượt trả lời · <kbd>Ctrl</kbd>+<kbd>K</kbd>: tra cứu từ</li>
           <li>Đúng/Sai nhanh: <kbd>D</kbd> = Đúng, <kbd>S</kbd> = Sai</li>
-          <li><kbd>Ctrl</kbd>+<kbd>K</kbd>: tra cứu từ</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=20261007_v1"></script>
+  <script src="srs.js?v=20261008_v2"></script>
+  <script src="app.js?v=20261008_v2"></script>
 </body>
 </html>

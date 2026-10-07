@@ -8,22 +8,34 @@ Giao diện kế thừa từ web ôn tập trắc nghiệm FE; phần học từ
 
 | Chế độ | Mục đích |
 | --- | --- |
-| 🃏 Flashcard | Lặp lại ngắt quãng (Leitner): tự chấm *Quên / Khó / Nhớ / Dễ*, từ nhớ chắc sẽ giãn lịch ôn 1 → 2 → 4 → 7 → 15 → 30 → 60 ngày |
-| 🔤 Anh → Việt | Trắc nghiệm 4 đáp án, chọn nghĩa đúng |
-| 💬 Việt → Anh | Trắc nghiệm 4 đáp án, nhớ ra từ tiếng Anh |
+| 🃏 Flashcard | Tự chấm *Quên / Khó / Nhớ / Dễ*; mỗi nút ghi rõ lần ôn kế tiếp theo lịch FSRS |
+| 🎲 Trộn ngẫu nhiên | Tự chọn dạng bài theo mức độ nhớ: từ mới → nhận diện, từ đã quen → tự nhớ lại |
+| 🔤 Anh → Việt · 💬 Việt → Anh | Trắc nghiệm 4 đáp án (đáp án nhiễu cùng từ loại, cùng chủ đề) |
 | 🎧 Nghe chọn từ | Nghe phát âm, chọn đúng từ (đáp án nhiễu có cách viết gần giống) |
-| ✍️ Gõ từ | Xem nghĩa, gõ lại từ, có gợi ý từng chữ cái |
-| 📝 Nghe – viết | Nghe rồi gõ chính tả, có nút đọc chậm |
+| ✍️ Gõ từ · 📝 Nghe – viết | Tự gõ lại từ; dùng gợi ý thì lượt đó tính là “Khó” |
 | 🔀 Chính tả 2 chọn 1 | Điền khuyết: chọn cách viết đúng giữa từ thật và một lỗi chính tả hay gặp |
-| ⚡ Đúng / Sai nhanh | Luyện phản xạ cặp từ – nghĩa, có đếm chuỗi đúng |
-| 🧩 Ghép cặp | Ghép 6 từ với 6 nghĩa, tính thời gian và số lần nhầm |
+| 🧬 Dạng từ | Biến đổi từ trong cùng họ: chọn dạng danh/động/tính/trạng từ |
+| ⚡ Đúng / Sai nhanh · 🧩 Ghép cặp | Luyện phản xạ, trò chơi ghép 6 cặp từ – nghĩa |
 | 🎙 Luyện phát âm | Đọc to, trình duyệt nhận dạng giọng nói để chấm (Chrome / Edge) |
-| 📖 Danh sách | Tra cứu theo từ hoặc nghĩa (gõ không dấu được), nghe, đánh dấu ★ |
-| 📊 Thống kê | Số từ đã học / đã thuộc, độ chính xác, chuỗi ngày, biểu đồ 14 ngày, từ hay sai |
+| 📂 Nhóm từ | Học theo **chủ đề**, **họ từ** hoặc **bộ từ tự tạo** |
+| 📖 Danh sách · 📊 Thống kê | Tra cứu (cả ghi chú), dự báo lịch ôn, lịch học, tỉ lệ nhớ thực tế, hiệu quả từng cách học |
 
-**Phạm vi học**: Hôm nay (từ đến hạn ôn + số từ mới mỗi ngày), theo bài 30 từ (114 bài), chưa học, đang học, cần ôn, hay sai, đánh dấu, đã thuộc; lọc thêm theo từ loại.
+## Phân loại từ
 
-Tiến độ lưu trong trình duyệt (localStorage); có thể xuất/nhập file JSON để chuyển máy. Phát âm dùng giọng đọc có sẵn của trình duyệt (chọn giọng Mỹ/Anh và tốc độ trong ⚙️).
+- **Chủ đề** (~30 nhóm): thời gian, con người, cơ thể & sức khỏe, ăn uống, công việc, tiền bạc, giao thông, thiên nhiên, cảm xúc, tư duy… Mỗi từ thuộc một chủ đề chính.
+  Danh sách nằm ở `tools/topics.py`; từ chưa có trong danh sách nào được xếp theo từ loại hoặc theo chủ đề của từ cùng họ.
+- **Họ từ** (word family, ~530 họ): nối các từ phái sinh như *success → successful → successfully → unsuccessful*, có danh sách chặn các cặp chỉ giống mặt chữ (*card/car*, *should/shoulder*…).
+- **Bộ từ của tôi**: tự tạo, thêm/bớt từ ngay ở phần thông tin từ; kèm sẵn ★ Đánh dấu và 🐛 Từ cứng đầu (quên ≥ 4 lần).
+
+## Lưu tiến độ
+
+- Lịch ôn dùng **FSRS 4.5** (thuật toán Anki dùng từ 2023) với tham số mặc định. Mỗi từ có *độ bền* (S – số ngày đến khi xác suất nhớ còn 90%) và *độ khó* (D). Lịch ôn đặt để bạn ôn đúng lúc xác suất nhớ chạm mức mong muốn (mặc định 90%, chỉnh 80–97% trong ⚙️). Từ mới đi qua các bước 1 phút → 10 phút trong phiên rồi mới chuyển sang lịch theo ngày.
+- Các chế độ luyện tập được quy đổi sang điểm FSRS: sai = Quên; đúng = Nhớ (chậm > 15 giây hoặc dùng gợi ý = Khó). Đúng khi chưa đến hạn chỉ được ghi nhận, không đẩy lịch ôn. Lỗi nhận dạng giọng nói không bị tính là quên.
+- Tiến độ lưu theo **chính từ** (không theo số thứ tự) nên cập nhật dữ liệu không làm lệch tiến độ. Tiến độ của bản đầu tiên tự chuyển sang khi mở trang (dùng `data/legacy_v1.json`).
+- Có **nhật ký từng lượt trả lời** (tối đa 30.000 lượt), dùng để tính tỉ lệ nhớ thực tế và hiệu quả từng cách học.
+- “Ngày học” bắt đầu lúc 4 giờ sáng (chỉnh được). Có giới hạn số từ mới và số lượt ôn mỗi ngày.
+- Hoàn tác lượt trả lời (↶ / Ctrl+Z); tự lưu bản sao mỗi ngày để khôi phục; xin trình duyệt lưu bền vững.
+- Xuất / nhập file JSON. **Nhập & gộp** giữ bản ôn gần nhất của từng từ, nên học trên nhiều máy rồi gộp lại không mất dữ liệu.
 
 ## Chạy trên máy
 
@@ -33,16 +45,18 @@ python -m http.server 8000
 
 Mở `http://localhost:8000`. (Không mở trực tiếp file `index.html` vì trình duyệt chặn đọc JSON.)
 
-## Cập nhật dữ liệu
+## Tạo lại dữ liệu
 
-`data/vocab.json` được tạo từ file PDF bằng:
+`data/vocab.json` (từ, chủ đề, họ từ) và `data/legacy_v1.json` được tạo từ file PDF:
 
 ```bash
 pip install pymupdf
-python tools/parse_pdf.py "duong/dan/3000.pdf"
+python tools/build_vocab.py "duong/dan/3000.pdf"
 ```
 
-Các dòng PDF bị lệch cột được sửa tay trong biến `FIX` của `tools/parse_pdf.py`.
+- `tools/parse_pdf.py`: đọc PDF (hai kiểu bố cục) và sửa tay các dòng lệch cột (`FIX`).
+- `tools/build_vocab.py`: gộp mục trùng, sửa mục lỗi (`MERGE`, `EDIT`), xếp chủ đề, tìm họ từ.
+- `tools/topics.py`: danh sách chủ đề.
 
 ## Nguồn dữ liệu
 

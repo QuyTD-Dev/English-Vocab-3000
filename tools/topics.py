@@ -1,0 +1,368 @@
+# -*- coding: utf-8 -*-
+"""Danh sách chủ đề để phân loại từ vựng (mỗi từ thuộc đúng một chủ đề chính).
+
+Thứ tự trong TOPICS là thứ tự ưu tiên: một từ có trong nhiều danh sách sẽ thuộc chủ đề đứng trước.
+Mỗi token khớp với một cách viết của từ (vd "disk" khớp "disc, disk"); token không có trong
+dữ liệu sẽ được build_vocab.py báo ra để rà soát.
+Từ không nằm trong danh sách nào sẽ được xếp theo: từ chức năng (theo từ loại) → chủ đề của
+từ gốc cùng họ → "Từ thông dụng khác".
+"""
+
+TOPICS = [
+    ("time", "⏰", "Thời gian", """
+        afternoon, afterwards, ago, annual, annually, anniversary, April, August, century, daily, date, day,
+        December, decade, delay, early, evening, eventually, February, final, finally, forever, Friday, future,
+        hour, immediate, immediately, January, July, June, late, later, latest, March, May, midday, midnight,
+        minute, moment, Monday, month, morning, night, November, now, o'clock, October, occasionally, often, once,
+        past, period, previous, previously, recent, recently, Saturday, schedule, second, September, soon,
+        Sunday, temporary, temporarily, then, Thursday, time, timetable, today, tomorrow, tonight, Tuesday, until,
+        till, Wednesday, week, weekend, weekly, year, yesterday, p.m., current, currently, modern, contemporary,
+        ancient, frequent, frequently, rarely, sometimes, always, never, usually, ever, meanwhile, permanent,
+        permanently, continuous, continuously, constant, constantly, regular, regularly, sudden, suddenly,
+        interval, session, beginning, ending, deadline, overnight, lately, prior, initial, initially, former,
+        formerly, next, last
+    """),
+    ("quantity", "📏", "Số lượng & đo lường", """
+        amount, approximate, approximately, average, calculate, calculation, centimetre, count, depth, dozen,
+        double, extra, few, gallon, gram, half, height, inch, kilogram, kilometre, least, length, less, litre,
+        lot, many, maximum, measure, measurement, medium, metre, mile, milligram, millimetre, minimum, more, most,
+        much, multiply, number, pair, part, partly, per, per cent, percent, piece, pint, plenty, plus, proportion,
+        quarter, quantity, rate, scale, several, size, sum, ton, tonne, total, totally, twice, unit, volume,
+        weigh, weight, width, zero, one, figure, bit, increase, decrease, reduce, reduction, expand, extent,
+        range, level, divide, division, equal, equally, add, addition, additional, enough, entire, entirely,
+        whole, mass, majority, minority, single, numerous, capacity, limit, limited, maximum,
+        mainly, mostly, partly, fully, completely, highly
+    """),
+    ("people", "👨‍👩‍👧", "Con người & gia đình", """
+        adult, aunt, boy, boyfriend, brother, child, couple, cousin, dad, daughter, elderly, family, father,
+        female, fellow, friend, friendship, gentleman, girl, girlfriend, grandchild, granddaughter, grandfather,
+        grandmother, grandparent, grandson, guest, guy, host, human, husband, individual, kid, lady, lover, male,
+        man, marriage, married, marry, mate, mother, mum, name, nephew, niece, parent, partner, people, person,
+        relationship, relative, sister, son, stranger, surname, twin, uncle, wedding, wife, woman, youth, young,
+        age, aged, birth, birthday, born, give birth, generation, death, dead, die, dying, funeral, alive, life,
+        living, make friends with, neighbour, neighbourhood, mr, mrs, ms, sir, madam, sex, sexual, sexually,
+        identity, personal, personally, self, childhood, teenager, baby, junior, senior, member, membership,
+        each other, everyone, everybody, nobody, somebody, someone, anyone, whoever, grave, engaged, divorce,
+        divorced, separated, separation, kiss, hug
+    """),
+    ("body", "🫀", "Cơ thể & sức khỏe", """
+        ankle, arm, beard, blood, body, bone, brain, breast, breath, breathe, breathing, cheek, chest, chin, ear,
+        elbow, eye, face, finger, flesh, foot, hair, hand, head, heart, heel, hip, knee, leg, lip, lung, mouth,
+        muscle, nail, neck, nerve, nose, organ, shoulder, skin, stomach, thumb, toe, tongue, tooth, throat, waist,
+        wrist, ambulance, bandage, be sick, cancer, cough, coughing, cure, dentist, disease, doctor, drug, fever,
+        flu, headache, heal, health, healthy, hospital, hurt, ill, illness, infect, infected, infection,
+        infectious, injure, injured, injury, medical, medicine, mental, mentally, nurse, pain, painful, patient,
+        pill, sick, sore, sweat, swell, swelling, swollen, tablet, treatment, wound, wounded, virus, bacteria,
+        diet, physical, physically, pregnant, blind, deaf, disabled, feel sick, cigarette, smoke, smoking, sleep,
+        asleep, awake, wake up, yawn, tired, tiring, shave, poison, poisonous, recover, faint, faintly,
+        unconscious, conscious, hearing, sight, vision, chemist, chemist's, drugstore, fit, fitness, harm,
+        harmful, harmless, bite, sting, bleed, ache, dizzy, fat, thin, pale, cell, gene, alcohol, alcoholic,
+        drunk, exercise, rest, scratch
+    """),
+    ("food", "🍎", "Ăn uống & nấu nướng", """
+        apple, bake, beef, beer, biscuit, boil, bowl, bread, breakfast, butter, cake, candy, carrot, cheese,
+        chew, chicken, chip, chocolate, coffee, cook, cooker, cookie, cooking, cream, crisp, cup, dinner, dish,
+        drink, eat, egg, flavour, flour, food, fork, fresh, freshly, fruit, fry, groceries, grocery, hungry,
+        ice cream, ingredient, jam, jelly, juice, knife, lemon, lunch, meal, meat, menu, milk, nut, oil, onion,
+        oven, pan, pepper, plate, pot, potato, raw, rice, salad, salt, salty, sauce, slice, soup, sour, spice,
+        spicy, spoon, stir, sugar, sweet, swallow, taste, tea, thirsty, tomato, vegetable, waiter, waitress,
+        wine, chop, feed, pour, restaurant, bottle, glass, tin, mixture, recipe, snack, peel, bitter,
+        delicious, tasty, roast, grain, crop, fish, pint
+    """),
+    ("clothes", "👕", "Quần áo & ngoại hình", """
+        belt, boot, cap, clothes, clothing, coat, dress, dressed, fashion, fashionable, glove, hat, jacket,
+        jeans, jewellery, make-up, pants, pocket, shirt, shoe, skirt, sleeve, sock, suit, sweater, tie, trousers,
+        underwear, uniform, wear, button, put sth on, naked, beautiful, beautifully, beauty, pretty, ugly,
+        attractive, blonde, curly, curl, glasses, bag, umbrella, ring, appearance, style, handsome, elegant,
+        cloth, cotton, silk, wool, leather, knit, knitted, knitting, sew, sewing, needle, thread, zip, wallet,
+        fold, folding, pin, stripe, striped, pattern, tidy, untidy, neat, neatly
+    """),
+    ("home", "🏠", "Nhà cửa & đồ dùng", """
+        apartment, bath, bathroom, bed, bedroom, bell, bin, brush, cabinet, carpet, ceiling, chair, closet,
+        clock, cottage, cupboard, curtain, desk, door, drawer, faucet, fence, floor, fridge, furniture, garage,
+        garden, heating, home, house, household, housing, key, kitchen, lamp, lid, lock, mirror, roof, room,
+        shelf, shower, sink, soap, stair, downstairs, upstairs, table, tap, toilet, towel, wall, window, yard,
+        box, envelope, glue, hammer, hook, rope, scissors, screw, string, tape, tool, tube, wire, container,
+        package, packet, plug, rubbish, garbage, dust, wash, washing, clean, dirt, dirty, mess, sweep, polish,
+        decorate, decoration, decorative, repair, rent, rented, resident, stove, refrigerator, gate, pillow,
+        blanket, sheet, candle, basket, bucket, ladder, mat, battery, iron, rubber, knot, lift, elevator, chamber,
+        domestic, indoor, indoors, outdoor, outdoors, interior, owner, property, estate, pool, swimming pool,
+        flat, tent, hole, nail, broom, cover, covering, mop
+    """),
+    ("education", "🎓", "Giáo dục & học tập", """
+        academic, alphabet, alphabetical, alphabetically, biology, chapter, chemistry, class, classroom, college,
+        course, dictionary, educate, educated, education, essay, exam, examination, geography, grammar, history,
+        historical, homework, institute, institution, knowledge, laboratory, lab, learn, lecture, lesson,
+        library, literature, mathematics, maths, philosophy, physics, professor, pupil, qualification,
+        qualified, qualify, read, reader, reading, revise, revision, school, spell, spelling, student, study,
+        subject, teach, teacher, teaching, term, test, university, vocabulary, pen, pencil, ruler, page, book,
+        diagram, chart, certificate, practice, practise, skill, skilled, skilful, skilfully, training, intelligence, intelligent, clever, genius, curriculum, primary, secondary, mark, score, pass, fail,
+        failure, topic, theme, example, exercise, instruction, ink, index, title, text, translate, translation
+    """),
+    ("work", "💼", "Công việc & kinh doanh", """
+        agency, agent, apply, application, appoint, appointment, boss, business, businessman, businesswoman,
+        career, chairman, chairwoman, client, colleague, commercial, commission, committee, company, conference,
+        consumer, contract, customer, deal, department, director, earn, economic, economy, employ, employee,
+        employer, employment, engineer, engineering, executive, expert, factory, farm, farmer, farming, firm,
+        hire, industrial, industry, interview, job, labour, manage, management, manager, manufacture,
+        manufacturer, manufacturing, market, marketing, meeting, office, officer, partnership, produce,
+        producer, product, production, profession, professional, profit, project, promote, promotion,
+        publication, publish, publishing, retire, retired, retirement, salary, secretary, specialist, staff,
+        strategy, succeed, success, successful, successfully, supply, task, team, trade, trading, unemployed,
+        unemployment, union, wage, work, worker, working, clerk, assistant, assist, assistance, captain, chief,
+        coach, guard, guide, servant, hairdresser, journalist, editor, operate, operation, organization,
+        organize, organized, plan, planning, schedule, duty, responsible, responsibility, career, occupation,
+        output, input, efficient, efficiently, effective, effectively, achieve, achievement, goal, target,
+        objective, deadline, quit, resign, sack, dismiss, venture, launch, brand, sector, scheme, proposal,
+        propose, negotiate, report, presentation, document, file, request, require, requirement, enquiry
+    """),
+    ("money", "💰", "Tiền bạc & mua sắm", """
+        afford, bank, bargain, bill, budget, buy, buyer, cash, cent, cheap, cheaply, cheque, coin, cost, credit,
+        credit card, debt, deposit, discount, dollar, euro, expensive, expense, fee, finance, financial, fund,
+        income, insurance, invest, investment, loan, lend, borrow, money, owe, pay, payment, pence, penny,
+        pound, price, purchase, receipt, rich, poor, sale, sell, saving, save, shop, shopping, spend, store,
+        supermarket, tax, wealth, value, valuable, worth, goods, mall, account, charge, pension, reward, prize,
+        gamble, gambling, bet, betting, cheat, owner, possess, possession, property, rent, waste, luxury,
+        economical, order, deliver, delivery, package, packaging, label, brand, customer, queue
+    """),
+    ("travel", "✈️", "Giao thông & du lịch", """
+        abroad, accommodation, airport, aircraft, arrival, arrive, baggage, bicycle, bike, boat, bus, car, cycle,
+        cycling, departure, flight, fly, flying, fuel, gas, gasoline, highway, hotel, journey, lane, lorry,
+        luggage, map, motor, motorcycle, passenger, passport, petrol, pilot, plane, platform, port, railway,
+        rail, reservation, reserve, ride, rider, riding, road, route, sail, sailing, sailor, seat, ship, station,
+        taxi, ticket, tour, tourist, traffic, train, transport, travel, traveller, trip, truck, tunnel, tyre,
+        van, vehicle, vacation, holiday, visit, visitor, wheel, camp, camping, suitcase, customs, border,
+        foreign, bridge, crash, accident, accidental, accidentally, park, speed, steer, underground, resort,
+        guide, street, direction, destination, explore, adventure, cross, pass, passage, passing, track, tube,
+        drive, driver, driving, brake, gear, engine, signal, exit, entrance, entry, depart, leave, return,
+        reach, distance, delay, miss, lost
+    """),
+    ("nature", "🌿", "Thiên nhiên, động vật & thời tiết", """
+        air, animal, autumn, bay, beach, beak, bear, bird, branch, bush, cat, climate, cloud, coast, cow, desert,
+        dog, earth, environment, environmental, feather, field, fish, fishing, flood, flower, forest, fur, grass,
+        hill, horse, ice, insect, island, lake, land, landscape, leaf, moon, mountain, mud, nature, natural,
+        naturally, nest, ocean, pet, pig, plant, pollution, rain, river, rock, root, sand, sea, season, seed,
+        sheep, shade, shadow, sky, snake, snow, soil, spider, spring, star, storm, stream, sun, summer, tail, tree,
+        tropical, universe, valley, weather, wild, wildly, wind, winter, wing, wave, heat, hot, cold, warm,
+        warmth, cool, temperature, planet, countryside, rural, horn, shell, mouse, fire, flame, water, wood,
+        forecast, sunshine, sunny, rainy, cloudy, dry, wet, damp, freeze, frozen, melt, hunt, hunting, creature,
+        breed, cell, deer, wildlife, global, world, continent, peak, slope, steep,
+        hollow, lightning, thunder, coal, dust, smoke, oxygen, sunrise, sunset
+    """),
+    ("places", "🏙️", "Địa điểm & công trình", """
+        area, building, castle, church, cinema, city, capital, centre, central, country, county, district,
+        hall, local, locally, location, located, locate, museum, nation, palace, place, post office, prison,
+        pub, region, regional, square, statue, theatre, tower, town, urban, village, zone, court, address,
+        premises, site, space, spot, construct, construction, build, block, brick, concrete, structure, gallery,
+        stadium, temple, studio, ground, landmark, facility, port, harbour, office, shop, market, avenue, path,
+        corner, neighbourhood, community, residential, situated, environment
+    """),
+    ("leisure", "🎭", "Giải trí, thể thao & nghệ thuật", """
+        actor, actress, art, artist, artistic, audience, ball, band, camera, card, climbing, club, comedy,
+        concert, dance, dancer, dancing, drama, dramatic, dramatically, draw, drawing, drum, entertain,
+        entertainer, entertaining, entertainment, exhibit, exhibition, fan, festival, film, football, game,
+        goal, hobby, instrument, kick, league, magic, match, movie, movie theater, music, musical, musician,
+        novel, paint, painter, painting, party, perform, performance, performer, photograph, photo,
+        photographer, photography, piano, picture, play, player, poem, poetry, race, racing, relax, relaxed,
+        relaxing, run, runner, running, scene, sing, singer, singing, song, sport, stage, star, swim, swimming,
+        team, theatre, toy, tune, video, win, winner, winning, competition, compete, competitive, contest,
+        rhythm, design, celebrate, celebration, ceremony, joke, fun, story, character, hero, romantic, author,
+        writer, classic, classical, culture, cultural, fame, famous, champion, holiday, leisure, gym, jog,
+        shoot, shooting, pitch, score, bat, chess, puzzle, guitar, act, role, show, beat, lose, defeat, victory,
+        opponent, rival, spectator, sketch, statue, sculpture, collection, collect, cartoon, fiction, horror,
+        comic, humour, humorous, amuse, amusing, enjoy, enjoyable, enjoyment
+    """),
+    ("tech", "💻", "Công nghệ & truyền thông", """
+        broadcast, cable, cd, channel, click, computer, data, device, dvd, electric, electrical, electricity,
+        electronic, email, e-mail, internet, keyboard, machine, machinery, media, mobile, mobile phone,
+        cellphone, monitor, network, news, newspaper, print, printer, printing, program, programme, radio,
+        record, recording, screen, software, technical, technique, technology, telephone, phone, television,
+        tv, web, website, magazine, disk, disc, tape, switch, user, online, digital, copy, photocopy, code,
+        password, button, battery, plug, wire, link, connect, connection, download, upload, robot, laser,
+        advertise, advertisement, advertising, publicity, article, edition, headline, press, journal, blog,
+        app, application, system, signal, file, folder, virus, video, image, graphic, operate, automatic,
+        automatically, invent, invention, innovation, gadget
+    """),
+    ("society", "⚖️", "Xã hội, chính trị & pháp luật", """
+        army, arms, armed, allied, ally, arrest, attorney, authority, ban, battle, bomb, bullet, campaign,
+        candidate, charity, citizen, civil, community, congress, conflict, conservative, council, court, crime,
+        criminal, custom, debate, defeat, defence, defend, elect, election, empire, enemy, federal, fight,
+        fighting, freedom, govern, government, governor, guard, guilty, gun, illegal, illegally, independence,
+        independent, independently, judge, judgement, justice, justified, justify, kill, killing, king, law,
+        lawyer, legal, legally, liberty, lord, mayor, military, minister, ministry, murder, nation, national,
+        navy, official, officially, opposition, parliament, peace, peaceful, police, policy, political,
+        politically, politician, politics, population, president, prime minister, prince, princess, prison,
+        prisoner, protest, public, publicly, punish, punishment, queen, religion, religious, revolution, rob,
+        royal, rule, ruler, security, senate, senator, shoot, soldier, society, social, socially, state, steal,
+        suspect, suspicion, suspicious, thief, threat, threaten, threatening, tradition, traditional,
+        traditionally, trial, victim, victory, violence, violent, violently, vote, war, weapon, witness,
+        worship, god, heaven, hell, holy, prayer, priest, soul, spirit, spiritual, faith, moral, morally,
+        immoral, evil, regulation, restriction, restrict, restricted, permit, permission, licence, license,
+        offence, offend, international, status, rank, rights, democracy, refugee, crisis, disaster, emergency,
+        rescue, survive, survival, attack, invade, capture, escape, enforce, abuse, institution, organization,
+        union, agreement, treaty, declare, sovereignty, human rights, unite, united, alliance, honour, fair,
+        unfair, unfairly, fairly, equal, discrimination, poverty, wealth, charity, volunteer, homeless, crowd,
+        majority, minority, race, racism, gender, generation, conservative, liberal, reform, policy, tax
+    """),
+    ("science", "🔬", "Khoa học & vật liệu", """
+        acid, atom, chemical, coal, concrete, cotton, diamond, element, energy, experiment, fuel, gas, gold, iron,
+        liquid, material, metal, mineral, nuclear, oil, plastic, powder, rubber, science, scientific,
+        scientist, silk, silver, solid, steam, steel, stone, substance, theory, wood, wooden, wool, glass,
+        leather, paper, cardboard, brick, research, analyse, analyze, analysis, formula, cell, planet, space,
+        structure, system, process, sample, observe, observation, discover, discovery, invent, invention,
+        explode, explosion, burn, burnt, dissolve, melt, freeze, boil, heat, pressure, force, gravity, magnet,
+        electricity, light, sound, ray, wave, physics, biology, chemistry, test, method, data, measure,
+        evidence, prove, proof, theory, laboratory, microscope, specimen, compound, mixture, mix, mixed,
+        combine, combination, react, reaction, crystal, bubble, flow, float, sink, pole, layer, surface, core,
+        volume, solution, solve, calculate, logic, logical, technology, engineer, origin, evolution, species
+    """),
+    ("communication", "💬", "Giao tiếp & ngôn ngữ", """
+        accent, admit, advise, advice, announce, answer, apologize, argue, argument, ask, call, chat, comment,
+        communicate, communication, complain, complaint, confirm, conversation, declare, deny, describe,
+        description, discuss, discussion, explain, explanation, express, expression, hello, hi, goodbye, bye,
+        inform, information, instruction, interrupt, interruption, introduce, introduction, invitation,
+        invite, language, letter, listen, mention, message, phrase, promise, pronounce, pronunciation,
+        question, quote, recommend, remark, reply, report, request, respond, response, rumour, say, scream,
+        shout, sign, signature, silence, silent, speak, speaker, speech, spoken, suggest, suggestion, talk,
+        tell, thank, thank you, thanks, tone, voice, warn, warning, whisper, write, writing, written,
+        congratulations, persuade, convince, encourage, encouragement, insist, urge, claim, contact, sentence,
+        symbol, label, note, notice, yours sincerely, yours truly, dear, please, excuse, ok, okay, yes, yeah,
+        oh, no, mail, post, send, receive, translate, word, words, define, definition, meaning, mean, refer to,
+        reference, story, gossip, conversation, dialogue, debate, praise, criticize, criticism, blame, insult,
+        insulting, swear, swearing, greet, welcome, nod, wave, laugh, smile, joke, quiet, quietly, loud, loudly,
+        noise, noisy, noisily, e.g., i.e., etc., et cetera
+    """),
+    ("feelings", "😊", "Cảm xúc & tính cách", """
+        afraid, amaze, amazed, amazing, amuse, amused, amusing, anger, angrily, angry, annoy, annoyed, annoying,
+        anxiety, anxious, anxiously, ashamed, bored, boring, bore, calm, calmly, cheerful, cheerfully, comfort,
+        comfortable, comfortably, uncomfortable, confidence, confident, confidently, courage, cruel, delight,
+        delighted, depress, depressed, depressing, desire, disappoint, disappointed, disappointing,
+        disappointment, disgust, disgusted, disgusting, dislike, embarrass, embarrassed, embarrassing,
+        embarrassment, emotion, emotional, emotionally, enthusiasm, enthusiastic, excite, excited, excitement,
+        exciting, fear, feel, feeling, frighten, frightened, frightening, glad, grateful, happily, happiness,
+        happy, unhappy, unhappiness, hate, hatred, hope, horror, impatient, impatiently, interest, interested,
+        interesting, irritate, irritated, irritating, jealous, joy, keen, kind, kindly, kindness, unkind, lazy,
+        lonely, love, lovely, mad, mood, nervous, nervously, patience, pity, pleasant, pleasantly, unpleasant,
+        please, pleased, pleasing, pleasure, polite, politely, pride, proud, proudly, relief, rude, rudely,
+        sad, sadly, sadness, satisfaction, satisfied, satisfy, satisfying, scare, scared, shame, shock,
+        shocked, shocking, shy, sorry, stress, stressed, surprise, surprised, surprising, surprisingly,
+        sympathetic, sympathy, tension, upset, upsetting, worried, worry, worrying, wish, brave,
+        bad-tempered, personality, honest, honestly, dishonest, dishonestly, generous, generously, gentle,
+        gently, stupid, silly, wise, loyal, faithful, faithfully, sincere, sincerely, sensitive, sensible, nice,
+        nicely, friendly, unfriendly, affection, admiration, admire, alarm, alarmed, alarming, curious,
+        curiously, crazy, aggressive, desperate, desperately, cry, tear, laugh, smile, hurt, miss, hopeful,
+        cheer, mercy, envy, jealousy, temper, attitude, character, characteristic, strict, strictly, tough,
+        serious, seriously, careful, carefully, careless, carelessly, patient, willing, willingly, unwilling,
+        willingness, ambition, determined, determination, devoted, eager, fond, fun, funny, humour, humorous
+    """),
+    ("thinking", "🧠", "Tư duy & nhận thức", """
+        aware, assume, believe, belief, concentrate, concentration, concept, conclude, conclusion, consider,
+        consideration, decide, decision, determine, doubt, dream, estimate, expect, expectation, fact, forget,
+        guess, idea, ideal, ideally, imagine, imagination, imaginary, intend, intention, intended, know,
+        knowledge, logic, logical, memory, mind, opinion, plan, predict, prefer, preference, purpose, realize,
+        reason, reasonable, reasonably, unreasonable, recall, recognize, recognition, reckon, regard, remember,
+        remind, solution, solve, suppose, sure, surely, theory, think, thinking, thought, truth, true, false,
+        understand, understanding, view, wonder, choose, choice, option, alternative, alternatively, select,
+        selection, compare, comparison, contrast, distinguish, identify, interpret, interpretation, critical,
+        confuse, confused, confusing, confusion, problem, aim, attention, pay attention to, focus, deliberate,
+        deliberately, sense, judge, imply, implication, consider, see, look, watch, hear, notice, observe,
+        perceive, attitude, principle, perspective, philosophy, mystery, mysterious, secret, secretly,
+        question, wonder, curious, certain, certainly, uncertain, doubt, probable, probably, possible,
+        possibly, impossible, likely, unlikely, maybe, perhaps, presumably, apparent, apparently, obvious,
+        obviously, clear, clearly, evident, assess, evaluate, analyse, research, learn, study, explore, search,
+        seek, find, discover, check, examine, investigate, investigation, test, try, attempt, prove, wisdom
+    """),
+    ("describe", "🎨", "Màu sắc, hình dạng & tính chất", """
+        black, blue, brown, colour, color, coloured, grey, gray, green, orange, pink, purple, red, white, yellow,
+        bright, brightly, dark, light, lightly, pale, shape, shaped, circle, square, triangle, round, rounded,
+        curve, curved, line, straight, flat, sharp, sharply, smooth, smoothly, rough, roughly, soft, softly, hard,
+        heavy, heavily, thick, thickly, thickness, thin, wide, widely, narrow, deep, deeply, shallow, long,
+        short, tall, high, low, big, small, large, largely, huge, tiny, enormous, giant, massive, vast, little,
+        old, new, newly, good, bad, badly, better, best, worse, worst, great, greatly, fine, finely, clean,
+        empty, full, simple, simply, complex, complicated, easy, easily, difficult, difficulty, possible,
+        important, importantly, unimportant, main, major, minor, special, specially, ordinary, normal, normally,
+        strange, strangely, odd, oddly, unusual, unusually, typical, typically, common, commonly, rare, real,
+        really, perfect, perfectly, excellent, brilliant, terrible, terribly, awful, awfully, wonderful,
+        famous, popular, quick, quickly, fast, slow, slowly, safe, safely, dangerous, danger, strong, strongly,
+        weak, weakness, firm, firmly, loose, loosely, tight, tightly, solid, sticky, shiny, stiff, stiffly,
+        pure, purely, plain, fancy, delicate, striped, dot, spot, pattern, beautiful, ugly, nice, lovely,
+        silly, crazy, cute, neat, messy, broad, broadly, steady, steadily, unsteady, stable, gentle, rough,
+        bent, broken, cracked, twisted, hollow, transparent, visible, invisible, blank, blankly, bare,
+        horizontal, vertical, parallel, upside down, quality, qualities, condition, state, feature, aspect,
+        appearance, style, type, kind, sort, form, version, variety, various, varied, similar, similarly,
+        same, different, differently, difference, unique, ideal, suitable, appropriate, proper, properly,
+        correct, correctly, wrong, wrongly, right, rightly, accurate, accurately, exact, exactly, precise,
+        precisely, true, false, valid, useful, useless, necessary, unnecessary, essential, essentially,
+        basic, basically, fundamental, general, generally, particular, particularly, specific, specifically,
+        obvious, clear, extreme, extremely, severe, severely, mild, slight, slightly, significant,
+        significantly, substantial, substantially, considerable, considerably, remarkable, remarkably,
+        outstanding, impressive, ridiculous, extraordinary, enormous, efficient, convenient, comfortable,
+        available, free, freely, busy, ready, quiet, noisy, loud, warm, cool, hot, cold, wet, dry
+    """),
+    ("position", "🧭", "Vị trí & phương hướng", """
+        above, across, ahead, along, alongside, apart, aside, away, back, backward, backwards, behind, below,
+        beneath, beside, between, beyond, bottom, corner, direction, down, downward, downwards, east, eastern,
+        edge, far, forward, forwards, front, here, inner, inside, interior, internal, left, middle, near,
+        nearby, nearly, north, northern, opposite, out, outer, outside, over, position, rear, right, side,
+        sideways, south, southern, there, top, towards, toward, under, underneath, up, upper, upward, upwards,
+        west, western, where, everywhere, anywhere, somewhere, nowhere, elsewhere, wherever, distance, close,
+        closely, next, horizontal, vertical, parallel, upside down, abroad, around, round, through,
+        throughout, within, inward, outward, centre, central, surround, surrounding, surroundings, location,
+        locate, located, place, spot, point, pointed, layer, surface, level, row, column, line
+    """),
+    ("action", "🏃", "Hành động & chuyển động", """
+        bend, bite, blow, break, bring, build, burn, carry, catch, chase, climb, close, collect, come, crash,
+        cross, cut, dig, drag, drop, enter, escape, fall, fetch, fill, fix, fly, fold, follow, give, go, grab,
+        grow, growth, hang, hide, hit, hold, jump, kick, knock, lay, lead, lean, leave, lie, lift, load, unload,
+        move, movement, moving, open, opening, pack, pick, place, pour, press, pull, push, put, raise, reach,
+        remove, removal, return, rise, roll, rub, run, rush, shake, shut, sit, slide, slip, spin, split, spread,
+        squeeze, stand, stay, step, stick, stretch, strike, swing, take, throw, touch, turn, twist, walk,
+        walking, wander, wave, wrap, wrapping, cover, keep, let, get, have, make, do, use, used, try, help, find,
+        show, wait, stop, start, finish, finished, begin, continue, become, change, happen, occur, set, send,
+        hurry, jump, kneel, lie, nod, point, punch, shoot, smash, crack, crush, burst, tear, sweep, wipe, tap,
+        clap, chase, hunt, hug, kiss, beat, hit, kick, throw, catch, swim, ride, sail, drive, travel, arrive,
+        approach, enter, exit, cross, pass, follow, lead, guide, carry, deliver, bring, fetch, take, put, lay,
+        place, set, attach, insert, connect, join, separate, divide, split, mix, combine, gather, collect,
+        sort, arrange, arrangement, organize, prepare, preparation, create, make, produce, destroy, damage,
+        ruin, ruined, break, repair, fix, mend, build, construct, dig, fill, empty, open, close, lock, seal,
+        tie, wrap, pack, load, hang, hook, stick, glue, pin, fasten, button, zip, wear, dress, wash, clean,
+        brush, comb, shave, cook, bake, fry, boil, cut, chop, slice, pour, stir, mix, eat, drink, swallow,
+        chew, bite, lick, suck, blow, breathe, cough, sneeze, yawn, sleep, wake, rest, relax, sit, stand, lie,
+        kneel, bend, stretch, shake, tremble, shiver, sweat, bleed, steer, float, sink, flow, pour, drip,
+        drop, spill, splash, spray, sprinkle, scatter, spread, shine, glow, flash, sparkle, burn, melt, freeze,
+        boil, explode, crash, collapse, swell, shrink, expand, extend, stretch, bend, twist, turn, spin, roll,
+        slide, slip, skip, hop, leap, climb, crawl, creep, march, wander, rush, hurry, chase, escape, flee,
+        hide, seek, search, look, watch, see, notice, stare, glance, peep, recover, gain, obtain, acquire,
+        receive, accept, refuse, reject, lose, miss, win, beat, defeat, fail, succeed, manage, cope, deal,
+        handle, tackle, solve, avoid, prevent, protect, save, rescue, help, support, aid, serve, provide,
+        offer, supply, share, lend, borrow, owe, pay, spend, waste, save, keep, store, hold, own, possess,
+        belong, contain, include, involve, consist of, depend, rely on, need, want, like, love, hate, prefer,
+        wish, hope, expect, wait, stay, remain, last, continue, keep, stop, quit, pause, end, finish, complete,
+        completely
+    """),
+]
+
+# Trạng từ / đại từ / từ nối hay gặp — xếp vào "Từ chức năng & từ nối"
+FUNCTION_WORDS = """
+    about, again, almost, alone, already, also, altogether, anyway, as, as well, else, especially, even,
+    further, hardly, hence, how, however, increasingly, indeed, instead, just, latter, moreover, nevertheless,
+    not, only, otherwise, quite, rather, so, somehow, somewhat, still, therefore, though, thus, together,
+    too, very, virtually, well, what, whatever, when, which, while, who, whom, whose, why, yet, ought to,
+    must, shall, would, he, she, it, me, us, them, they, themselves, theirs, ours, yours, this, none, nor,
+    on, other, in addition, in case of, in control of, in exchange for, all right, mere, merely, shortly,
+    according to, apart from, have to, used to, upon, via, per, despite, unless, whereas, whether, either,
+    neither, both, each, every, such, own
+"""
+
+# Nhóm dự phòng cho từ chưa thuộc chủ đề nào (chia theo từ loại chính)
+FALLBACK_TOPICS = {
+    "phrase": ("phrase", "🔗", "Cụm từ & cụm động từ"),
+    "n": ("concept", "🧩", "Khái niệm & sự việc"),
+    "v": ("verbs", "⚙️", "Động từ thông dụng khác"),
+    "adj": ("qualities", "✨", "Tính từ & trạng từ khác"),
+}
+
+# Từ loại được xếp vào nhóm "Từ chức năng" khi chưa thuộc chủ đề nào
+FUNCTION_POS = {"pron", "det", "prep", "conj", "article", "modal", "aux", "exclam", "number", "abbr", "prefix"}
+FUNCTION_TOPIC = ("function", "🔤", "Từ chức năng & từ nối")
+OTHER_TOPIC = ("other", "📦", "Từ thông dụng khác")

@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Chuyển PDF "3000 từ vựng tiếng Anh thông dụng nhất" thành data/vocab.json.
+"""Đọc PDF "3000 từ vựng tiếng Anh thông dụng nhất" thành danh sách từ.
 
 Cần: pip install pymupdf
-Chạy: python tools/parse_pdf.py "C:/duong/dan/3000.pdf"
+Dùng qua: python tools/build_vocab.py "C:/duong/dan/3000.pdf"
 
 PDF có hai kiểu bố cục (số thứ tự và từ trên cùng một dòng hoặc tách dòng),
 nên parser đọc tuần tự theo số thứ tự 1, 2, 3… và tự nhận diện từ loại / phiên âm / nghĩa.
 """
-import json
-import os
 import re
 import sys
 
@@ -139,29 +137,17 @@ def clean(s):
     return s.rstrip(".").strip()
 
 
-def main():
-    if len(sys.argv) < 2:
-        sys.exit("Cách dùng: python tools/parse_pdf.py <file.pdf>")
-    raw = parse(read_lines(sys.argv[1]))
+def extract_v1(pdf_path):
+    """Danh sách từ "phiên bản 1" (thứ tự giống bản web đầu tiên, dùng để chuyển tiến độ cũ)."""
     words = []
-    for no, word, typ, ipa, meaning in raw:
+    for no, word, typ, ipa, meaning in parse(read_lines(pdf_path)):
         if no in DROP:
             continue
         if no in FIX:
             word, typ, ipa, meaning = FIX[no]
         words.append([clean(word), typ, clean(ipa).replace("ɳ", "ŋ"), clean(meaning)])
-    data = {
-        "title": "3000 từ vựng tiếng Anh thông dụng nhất (Oxford 3000)",
-        "source": "Oxford 3000 – bản dịch nghĩa tiếng Việt của Effortless English Club",
-        "fields": ["word", "type", "ipa", "meaning"],
-        "total": len(words),
-        "words": words,
-    }
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "vocab.json")
-    with open(out, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"{len(words)} từ -> {os.path.normpath(out)}")
+    return words
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit("Hãy chạy: python tools/build_vocab.py <file.pdf>")
