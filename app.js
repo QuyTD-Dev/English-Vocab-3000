@@ -682,7 +682,15 @@
     if (qpos < queue.length) qpos++;
     cur = null;
     render();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    keepCardInView();
+  }
+
+  /** Giữ nguyên vị trí cuộn; chỉ căn lại khi đầu thẻ câu hỏi đã trôi lên khỏi màn hình */
+  function keepCardInView() {
+    const card = els.view.querySelector(".exam-card");
+    if (!card) return;
+    const top = card.getBoundingClientRect().top;
+    if (top < 0) window.scrollTo({ top: Math.max(0, window.scrollY + top - 8), behavior: "auto" });
   }
 
   function noteResult(w, correct) {
@@ -1781,7 +1789,7 @@
     if (keepFocusId) {
       const inp = $(keepFocusId);
       if (inp) {
-        inp.focus();
+        inp.focus({ preventScroll: true });
         inp.setSelectionRange(inp.value.length, inp.value.length);
       }
     } else {
