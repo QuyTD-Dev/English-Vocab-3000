@@ -148,12 +148,12 @@
   let settings = Object.assign(
     {
       accent: "en-US", voice: "", rate: 0.9, goal: 20, maxReviews: 200, retention: 0.9,
-      newOrder: "alpha", dayStartHour: 4, autoSpeak: true, autoNext: true, autoDict: true,
+      newOrder: "alpha", dayStartHour: 4, autoSpeak: true, autoNext: true, autoDict: true, fontScale: 1,
     },
     load(KEY.settings, {})
   );
   let ui = Object.assign(
-    { mode: "flash", scope: "today", lesson: 1, group: "topic:food", pos: "all", reverse: false, mapView: "lessons", groupTab: "topics" },
+    { mode: "flash", scope: "today", lesson: 1, group: "topic:food", pos: "all", reverse: false, mapView: "lessons", groupTab: "topics", welcomed: false },
     load(KEY.ui, {})
   );
 
@@ -1605,13 +1605,49 @@
     return base.filter((w) => fold(w.word).includes(q) || fold(w.meaning).includes(q) || fold(meta[w.key]?.note).includes(q));
   }
 
+  /** Lần đầu mở web (chưa học từ nào): hướng dẫn 3 bước bắt đầu */
+  function welcomeHtml() {
+    if (ui.welcomed || Object.keys(cards).length || log.length) return "";
+    return `<section class="welcome" aria-label="Hướng dẫn bắt đầu">
+      <h2>👋 Chào bạn! Bắt đầu học 3000 từ vựng</h2>
+      <ol>
+        <li><b>Mỗi ngày</b> chọn phạm vi <i>📅 Hôm nay</i>: web gom từ cần ôn + ${settings.goal} từ mới.</li>
+        <li><b>Học từ mới bằng 🃏 Flashcard</b>: đoán nghĩa → lật thẻ → tự chấm Quên / Khó / Nhớ / Dễ.</li>
+        <li><b>Luyện thêm</b> bằng 🎲 Trộn ngẫu nhiên, 📄 Điền vào câu, ✍️ Gõ từ… Web tự hẹn ngày ôn cho từng từ.</li>
+      </ol>
+      <div class="sync-actions">
+        <button type="button" class="btn primary" data-act="welcome-start">▶ Bắt đầu học hôm nay</button>
+        <button type="button" class="btn" data-act="welcome-topics">📂 Chọn theo chủ đề</button>
+        <button type="button" class="btn" data-act="welcome-help">💡 Cách học hiệu quả</button>
+        <button type="button" class="btn ghost" data-act="welcome-close" aria-label="Ẩn hướng dẫn">✕</button>
+      </div>
+    </section>`;
+  }
+
+  /** Xuất danh sách đang xem ra CSV (mở bằng Excel / nhập vào Anki) */
+  function exportCsv(list, name) {
+    const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const head = ["word", "type", "ipa", "meaning_vi", "topic", "status", "note"];
+    const rows = list.map((w) =>
+      [w.word, w.type, w.ipa ? `/${w.ipa}/` : "", w.meaning, topicOf(w).name, STATUS_TEXT[status(w)], meta[w.key]?.note || ""].map(cell).join(",")
+    );
+    const blob = new Blob(["\ufeff" + [head.join(","), ...rows].join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `tu-vung-${fold(name).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "danh-sach"}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast(`⬇ Đã xuất ${list.length} từ ra file CSV`);
+  }
+
   function renderList() {
     const all = listMatches();
     const rows = all.slice(0, listLimit);
     const scopeName = ui.scope === "group" ? groupLabel(ui.group) : SCOPES.find(([v]) => v === ui.scope)?.[1] || "";
     return `<article class="exam-card vocab-card">
       <div class="card-header"><span class="card-code">DANH SÁCH TỪ</span><span class="card-sep">|</span>
-        <span class="card-qnum">${all.length} từ ${listQuery ? "khớp tìm kiếm (mọi bài)" : `· ${escapeHtml(scopeName)}`}</span></div>
+        <span class="card-qnum">${all.length} từ ${listQuery ? "khớp tìm kiếm (mọi bài)" : `· ${escapeHtml(scopeName)}`}</span>
+        <span class="card-pos"><button type="button" class="btn small" data-act="export-csv" ${all.length ? "" : "disabled"} title="Xuất danh sách đang xem ra file CSV (Excel, Anki)">⬇ CSV</button></span></div>
       <div class="search-input-wrap list-search">
         <span class="search-icon">🔍</span>
         <input type="search" id="listSearch" placeholder="Tìm từ, nghĩa tiếng Việt (gõ không dấu được) hoặc ghi chú của bạn…" value="${escapeHtml(listQuery)}" autocomplete="off" spellcheck="false" />
@@ -1989,6 +2025,7 @@
       return;
     }
     let html;
+    const welcome = welcomeHtml();
     if (ui.mode === "list") html = renderList();
     else if (ui.mode === "stats") html = renderStats();
     else if (ui.mode === "groups") html = renderGroups();
@@ -2004,7 +2041,7 @@
     }
     const active = document.activeElement;
     const keepFocusId = active && (active.id === "listSearch" || active.id === "famSearch") ? active.id : null;
-    els.view.innerHTML = html;
+    els.view.innerHTML = welcome + html;
     if (settings.autoDict) {
       els.view.querySelectorAll(".wi-dict").forEach((el) => {
         const w = byKey.get(el.dataset.key);
@@ -2231,6 +2268,24 @@
         return render();
       case "retry-wrong":
         buildQueue(shuffle([...session.wrong.values()]));
+        return render();
+      case "export-csv": {
+        const name = listQuery ? `tim-${listQuery}` : ui.scope === "group" ? groupLabel(ui.group) : ui.scope === "lesson" ? `bai-${ui.lesson}` : ui.scope;
+        return exportCsv(listMatches(), name);
+      }
+      case "welcome-start":
+        ui.welcomed = true;
+        ui.scope = "today";
+        return setMode("flash");
+      case "welcome-topics":
+        ui.welcomed = true;
+        ui.groupTab = "topics";
+        return setMode("groups");
+      case "welcome-help":
+        return openModal("helpModal");
+      case "welcome-close":
+        ui.welcomed = true;
+        saveUi();
         return render();
       case "list-more":
         listLimit += LIST_PAGE * 2;
@@ -2490,6 +2545,7 @@
     $("setAutoSpeak").checked = settings.autoSpeak;
     $("setAutoNext").checked = settings.autoNext;
     $("setAutoDict").checked = settings.autoDict;
+    $("setFontScale").value = String(settings.fontScale || 1);
     retentionNote();
     fillVoices();
     openModal("settingsModal");
@@ -2538,6 +2594,10 @@
   onSetting("setAutoSpeak", "change", (t) => (settings.autoSpeak = t.checked));
   onSetting("setAutoNext", "change", (t) => (settings.autoNext = t.checked));
   onSetting("setAutoDict", "change", (t) => (settings.autoDict = t.checked));
+  onSetting("setFontScale", "change", (t) => {
+    settings.fontScale = Number(t.value) || 1;
+    applyFontScale();
+  });
   $("btnTestVoice").addEventListener("click", () => speak("Hello! Let's learn three thousand English words together."));
 
   // ---- sao lưu
@@ -2731,6 +2791,12 @@
     applyTheme(t);
   });
   applyTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
+
+  function applyFontScale() {
+    const sc = Math.min(1.3, Math.max(0.9, Number(settings.fontScale) || 1));
+    document.documentElement.style.fontSize = sc === 1 ? "" : `${Math.round(sc * 100)}%`;
+  }
+  applyFontScale();
 
   // ================================================================ khởi động
   /** Mỗi ngày lưu một bản sao tiến độ (không gồm nhật ký) để khôi phục khi lỡ tay */

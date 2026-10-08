@@ -24,11 +24,13 @@
           t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         }
         if (t === "dark") document.documentElement.classList.add("dark");
+        var st = JSON.parse(localStorage.getItem("vocab3000_settings_v1") || "{}");
+        if (st.fontScale && st.fontScale !== 1) document.documentElement.style.fontSize = Math.round(st.fontScale * 100) + "%";
       } catch (e) {}
     })();
   </script>
   <link rel="stylesheet" href="style.css?v=20261008_v2" />
-  <link rel="stylesheet" href="vocab.css?v=20261008_v7" />
+  <link rel="stylesheet" href="vocab.css?v=20261008_v8" />
 </head>
 <body>
   <div class="app">
@@ -157,6 +159,15 @@
       <p class="modal-lead" id="retentionNote"></p>
 
       <h3 class="set-h">⚙️ Khác</h3>
+      <label class="sync-field">Cỡ chữ
+        <select id="setFontScale" class="sel">
+          <option value="0.9">Nhỏ (90%)</option>
+          <option value="1">Vừa (100%)</option>
+          <option value="1.1">Lớn (110%)</option>
+          <option value="1.2">Rất lớn (120%)</option>
+          <option value="1.3">Cực lớn (130%)</option>
+        </select>
+      </label>
       <label class="sync-check"><input type="checkbox" id="setAutoSpeak" /> Tự đọc từ khi hiện câu hỏi</label>
       <label class="sync-check"><input type="checkbox" id="setAutoNext" /> Tự chuyển câu khi trả lời đúng</label>
       <label class="sync-check"><input type="checkbox" id="setAutoDict" /> Tự tải câu ví dụ tiếng Anh &amp; giọng đọc người thật (cần mạng)</label>
@@ -225,6 +236,6 @@
   </div>
 
   <script src="srs.js?v=20261008_v2"></script>
-  <script src="app.js?v=20261008_v8"></script>
+  <script src="app.js?v=20261008_v9"></script>
 </body>
 </html>
