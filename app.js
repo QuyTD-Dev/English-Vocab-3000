@@ -521,10 +521,10 @@
       .map(([acc, src]) => `<button type="button" class="btn small" data-act="dict-audio" data-src="${escapeHtml(src)}" title="Giọng đọc thu âm">🔈 ${accName[acc]}</button>`)
       .join("");
     const ex = d.examples.length
-      ? `<ul class="dict-ex">${d.examples.map((e) => `<li><span class="pos-tag">${escapeHtml(e.pos)}</span> ${highlightWord(e.text, w)}</li>`).join("")}</ul>`
+      ? `<ul class="dict-ex" lang="en">${d.examples.map((e) => `<li><span class="pos-tag">${escapeHtml(e.pos)}</span> ${highlightWord(e.text, w)}</li>`).join("")}</ul>`
       : "";
     const defs = !d.examples.length && d.defs.length
-      ? `<ul class="dict-ex">${d.defs.map((e) => `<li><span class="pos-tag">${escapeHtml(e.pos)}</span> ${escapeHtml(e.text)}</li>`).join("")}</ul>`
+      ? `<ul class="dict-ex" lang="en">${d.defs.map((e) => `<li><span class="pos-tag">${escapeHtml(e.pos)}</span> ${escapeHtml(e.text)}</li>`).join("")}</ul>`
       : "";
     return `${audio ? `<div class="dict-audio">${audio}</div>` : ""}${ex}${defs}
       <p class="dict-src">${d.examples.length || d.defs.length ? "Ví dụ: Wiktionary (CC BY-SA)" : ""}${Object.keys(d.audio).length ? `${d.examples.length || d.defs.length ? " · " : ""}giọng thu âm: Free Dictionary API` : ""}</p>`;
@@ -1167,7 +1167,7 @@
     const note = meta[w.key]?.note || "";
     return `<div class="word-info">
       <div class="wi-head">
-        <span class="wi-word">${escapeHtml(w.word)}</span>
+        <span class="wi-word" lang="en">${escapeHtml(w.word)}</span>
         ${canSpeak ? `<button type="button" class="btn speak-btn small" data-act="speak-key" data-key="${escapeHtml(w.key)}" title="Nghe">🔊</button>` : ""}
         ${w.ipa ? `<span class="wi-ipa">/${escapeHtml(w.ipa)}/</span>` : ""}
       </div>
@@ -1229,7 +1229,7 @@
       <button type="button" class="btn primary" id="btnNext" data-act="next">${answered ? "Tiếp →" : "Bỏ qua →"}</button>`;
   }
 
-  function optionsHtml(texts, { big = false } = {}) {
+  function optionsHtml(texts, { big = false, lang = "" } = {}) {
     const letters = "ABCD";
     return `<div class="card-options ${big ? "opts-big" : ""} ${texts.length === 2 ? "opts-two" : ""}">
       ${texts
@@ -1240,7 +1240,7 @@
             else if (i === cur.chosen) cls += " wrong";
           }
           return `<button type="button" class="${cls}" data-act="opt" data-i="${i}" ${cur.answered ? "disabled" : ""}>
-            <span class="opt-letter">${letters[i]}.</span><span class="opt-text">${escapeHtml(t)}</span></button>`;
+            <span class="opt-letter">${letters[i]}.</span><span class="opt-text"${lang ? ` lang="${lang}"` : ""}>${escapeHtml(t)}</span></button>`;
         })
         .join("")}
     </div>`;
@@ -1255,7 +1255,7 @@
           ${w.type ? `<div class="wi-pos"><span class="pos-tag">${escapeHtml(w.type)}</span> ${escapeHtml(posLabel(w))}</div>` : ""}
         </div>`
       : `<div class="flash-face">
-          <div class="vocab-word">${escapeHtml(w.word)}</div>
+          <div class="vocab-word" lang="en">${escapeHtml(w.word)}</div>
           ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/</div>` : ""}
           ${speakBtn("🔊 Nghe")}
         </div>`;
@@ -1291,7 +1291,7 @@
     let hint = "";
     if (mode === "en2vi") {
       hint = `Chọn nghĩa đúng của từ<span class="kb"> (phím 1–4)</span>`;
-      prompt = `<div class="vocab-prompt"><div class="vocab-word">${escapeHtml(w.word)}</div>
+      prompt = `<div class="vocab-prompt"><div class="vocab-word" lang="en">${escapeHtml(w.word)}</div>
         ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/ ${speakBtn("🔊", "small")}</div>` : speakBtn("🔊", "small")}
         ${w.type ? `<div class="wi-pos"><span class="pos-tag">${escapeHtml(w.type)}</span></div>` : ""}</div>`;
     } else if (mode === "vi2en") {
@@ -1311,7 +1311,7 @@
     } else if (mode === "cloze") {
       const cz = cur.cloze;
       hint = `Chọn từ điền vào chỗ trống – từ trong câu có thể ở dạng chia khác (vd thêm -s, -ed)<span class="kb"> (phím 1–4)</span>`;
-      prompt = `<div class="vocab-prompt"><div class="cloze-sentence">${escapeHtml(cz.before)}<span class="blank">${
+      prompt = `<div class="vocab-prompt"><div class="cloze-sentence" lang="en">${escapeHtml(cz.before)}<span class="blank">${
         cur.answered ? escapeHtml(cz.word) : "_____"
       }</span>${escapeHtml(cz.after)}</div></div>`;
     } else if (mode === "wordform") {
@@ -1337,7 +1337,7 @@
     return cardShell({
       code: MODE_TITLE[mode].toUpperCase(),
       hint,
-      body: prompt + optionsHtml(cur.options, { big: mode !== "en2vi" }),
+      body: prompt + optionsHtml(cur.options, { big: mode !== "en2vi", lang: mode === "en2vi" ? "" : "en" }),
       nav: navNext(),
       after: feedbackHtml(cur.answered && (!cur.correct || mode === "wordform") ? extra : ""),
     });
@@ -1398,7 +1398,7 @@
   function renderTf() {
     const s = cur.shown;
     const body = `<div class="vocab-prompt tf-prompt">
-        <div class="vocab-word">${escapeHtml(cur.w.word)} ${speakBtn("🔊", "small")}</div>
+        <div class="vocab-word" lang="en">${escapeHtml(cur.w.word)} ${speakBtn("🔊", "small")}</div>
         <div class="tf-eq">có nghĩa là</div>
         <div class="vocab-meaning-big">${escapeHtml(s.short)}</div>
       </div>
@@ -1432,7 +1432,7 @@
         ${cur.heard.length ? `<p class="heard">Máy nghe được: <b>${escapeHtml(cur.heard[0])}</b>${cur.heard.length > 1 ? ` <span class="muted">(hoặc: ${cur.heard.slice(1, 3).map(escapeHtml).join(", ")})</span>` : ""}</p>` : ""}`;
     }
     const body = `<div class="vocab-prompt">
-        <div class="vocab-word">${escapeHtml(w.word)}</div>
+        <div class="vocab-word" lang="en">${escapeHtml(w.word)}</div>
         ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/</div>` : ""}
         <div class="wi-meaning center">${escapeHtml(w.short)}</div>
         <div class="listen-prompt">${speakBtn("🔊 Nghe mẫu")}${canSpeak ? `<button type="button" class="btn speak-btn" data-act="slow">🐢 Chậm</button>` : ""}</div>
@@ -1482,7 +1482,7 @@
       if (m.sel === id) cls += " sel";
       if (m.flash && m.flash.includes(id)) cls += " wrong";
       const text = side === "L" ? w.main : w.short;
-      return `<button type="button" class="${cls}" data-act="match" data-k="${id}" ${m.done.has(w.idx) ? "disabled" : ""}>${escapeHtml(text)}</button>`;
+      return `<button type="button" class="${cls}" data-act="match" data-k="${id}" ${side === "L" ? 'lang="en"' : ""} ${m.done.has(w.idx) ? "disabled" : ""}>${escapeHtml(text)}</button>`;
     };
     const finished = m.done.size === m.words.length;
     const errs = [...m.errors.values()].reduce((a, b) => a + b, 0);
@@ -1581,7 +1581,7 @@
           ? `<div class="wrong-list"><strong>Các từ cần chú ý</strong>${wrong
               .map(
                 (w) => `<div class="wrong-item"><button type="button" class="btn small" data-act="speak-key" data-key="${escapeHtml(w.key)}">🔊</button>
-                  <b>${escapeHtml(w.word)}</b> <span class="muted">/${escapeHtml(w.ipa)}/</span> – ${escapeHtml(w.short)}</div>`
+                  <b lang="en">${escapeHtml(w.word)}</b> <span class="muted">/${escapeHtml(w.ipa)}/</span> – ${escapeHtml(w.short)}</div>`
               )
               .join("")}</div>`
           : ""
@@ -1661,7 +1661,7 @@
             return `<div class="vrow" role="row">
               <span class="vno">${w.idx + 1}</span>
               <button type="button" class="btn small" data-act="speak-key" data-key="${escapeHtml(w.key)}" aria-label="Nghe ${escapeHtml(w.main)}">🔊</button>
-              <span class="vword"><b>${escapeHtml(w.word)}</b> ${w.type ? `<span class="pos-tag">${escapeHtml(w.type)}</span>` : ""}<br><span class="muted">${w.ipa ? `/${escapeHtml(w.ipa)}/` : ""}</span></span>
+              <span class="vword"><b lang="en">${escapeHtml(w.word)}</b> ${w.type ? `<span class="pos-tag">${escapeHtml(w.type)}</span>` : ""}<br><span class="muted">${w.ipa ? `/${escapeHtml(w.ipa)}/` : ""}</span></span>
               <span class="vmean">${escapeHtml(w.meaning)}${note ? `<br><span class="vnote">📝 ${escapeHtml(note)}</span>` : ""}</span>
               <span class="badge st-${st}" title="${escapeHtml(memoryLine(w).replace(/<[^>]+>/g, ""))}">${STATUS_TEXT[st]}</span>
               <button type="button" class="btn small star-btn ${star ? "starred" : ""}" data-act="star-key" data-key="${escapeHtml(w.key)}" aria-label="Đánh dấu">${star ? "★" : "☆"}</button>
@@ -1737,7 +1737,7 @@
             const s = groupStats(x.ws);
             return `<div class="fam-row">
               <div class="fam-words">${x.ws
-                .map((w) => `<button type="button" class="fam-w st-${status(w)}" data-act="speak-key" data-key="${escapeHtml(w.key)}" data-tip="1" title="${escapeHtml(w.short)}">${escapeHtml(w.main)} <i>${escapeHtml(w.pos.join(","))}</i></button>`)
+                .map((w) => `<button type="button" class="fam-w st-${status(w)}" lang="en" data-act="speak-key" data-key="${escapeHtml(w.key)}" data-tip="1" title="${escapeHtml(w.short)}">${escapeHtml(w.main)} <i>${escapeHtml(w.pos.join(","))}</i></button>`)
                 .join("")}</div>
               ${progressBar(s)}
               <div class="gcard-actions">
@@ -1897,7 +1897,7 @@
           ? `<div class="wrong-list">${hardest
               .map(
                 (w) => `<div class="wrong-item"><button type="button" class="btn small" data-act="speak-key" data-key="${escapeHtml(w.key)}">🔊</button>
-                  <b>${escapeHtml(w.word)}</b> – ${escapeHtml(w.short)} <span class="muted">(quên ${cardOf(w).lapses || 0} lần, sai ${cardOf(w).bad} lần)</span></div>`
+                  <b lang="en">${escapeHtml(w.word)}</b> – ${escapeHtml(w.short)} <span class="muted">(quên ${cardOf(w).lapses || 0} lần, sai ${cardOf(w).bad} lần)</span></div>`
               )
               .join("")}</div>
              <div class="sync-actions"><button type="button" class="btn primary" data-act="scope" data-v="hard">Luyện các từ hay sai</button></div>`
