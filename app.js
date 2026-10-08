@@ -933,7 +933,7 @@
     const others = families[fi].map((x) => words[x]).filter((m) => m !== w);
     return `<div class="wi-family"><span class="muted">🧬 Cùng họ:</span> ${others
       .map(
-        (m) => `<button type="button" class="chip chip-sm" data-act="speak-key" data-key="${escapeHtml(m.key)}" title="${escapeHtml(m.short)}">
+        (m) => `<button type="button" class="chip chip-sm" data-act="speak-key" data-key="${escapeHtml(m.key)}" data-tip="1" title="${escapeHtml(m.short)}">
           ${escapeHtml(m.main)} <i>${escapeHtml(m.pos.join(","))}</i></button>`
       )
       .join("")}
@@ -1060,7 +1060,7 @@
     const body = cur.flipped
       ? `<div class="flash-card flipped">${front}<div class="flash-back">${wordInfo(w)}</div></div>`
       : `<div class="flash-card" role="button" tabindex="0" data-act="flip" aria-label="Lật thẻ">${front}
-          <span class="flash-tip">Nhớ lại ${cur.reverse ? "từ tiếng Anh" : "nghĩa"} trong đầu, rồi bấm để lật (Space)</span></div>`;
+          <span class="flash-tip">Nhớ lại ${cur.reverse ? "từ tiếng Anh" : "nghĩa"} trong đầu, rồi bấm để lật<span class="kb"> (Space)</span></span></div>`;
     const labels = ["Quên", "Khó", "Nhớ", "Dễ"];
     const pv = cur.flipped ? SRS.preview(cardOf(w), Date.now(), srsOpts()) : [];
     const nav = cur.flipped
@@ -1088,27 +1088,27 @@
     let prompt = "";
     let hint = "";
     if (mode === "en2vi") {
-      hint = "Chọn nghĩa đúng của từ (phím 1–4)";
+      hint = `Chọn nghĩa đúng của từ<span class="kb"> (phím 1–4)</span>`;
       prompt = `<div class="vocab-prompt"><div class="vocab-word">${escapeHtml(w.word)}</div>
         ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/ ${speakBtn("🔊", "small")}</div>` : speakBtn("🔊", "small")}
         ${w.type ? `<div class="wi-pos"><span class="pos-tag">${escapeHtml(w.type)}</span></div>` : ""}</div>`;
     } else if (mode === "vi2en") {
-      hint = "Chọn từ tiếng Anh đúng (phím 1–4)";
+      hint = `Chọn từ tiếng Anh đúng<span class="kb"> (phím 1–4)</span>`;
       prompt = `<div class="vocab-prompt"><div class="vocab-meaning-big">${escapeHtml(w.meaning)}</div>
         ${w.type ? `<div class="wi-pos"><span class="pos-tag">${escapeHtml(w.type)}</span> ${escapeHtml(posLabel(w))}</div>` : ""}</div>`;
     } else if (mode === "listen") {
-      hint = "Nghe và chọn từ bạn nghe được (R: nghe lại)";
+      hint = `Nghe và chọn từ bạn nghe được<span class="kb"> (R: nghe lại)</span>`;
       prompt = `<div class="vocab-prompt listen-prompt">
         ${speakBtn("🔊 Nghe lại", "big")}
         ${canSpeak ? `<button type="button" class="btn speak-btn" data-act="slow">🐢 Đọc chậm</button>` : `<p class="warn">Trình duyệt không hỗ trợ giọng đọc.</p>`}
       </div>`;
     } else if (mode === "fill2") {
-      hint = "Điền khuyết – chọn cách viết đúng (phím 1–2)";
+      hint = `Điền khuyết – chọn cách viết đúng<span class="kb"> (phím 1–2)</span>`;
       prompt = `<div class="vocab-prompt"><div class="fill-sentence">“${escapeHtml(w.short)}” trong tiếng Anh là <span class="blank">${cur.answered ? escapeHtml(w.main) : "_____"}</span></div>
         ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/</div>` : ""}</div>`;
     } else if (mode === "wordform") {
       const target = w.pos[0];
-      hint = "Biến đổi từ – chọn đúng dạng từ loại được hỏi (phím 1–4)";
+      hint = `Biến đổi từ – chọn đúng dạng từ loại được hỏi<span class="kb"> (phím 1–4)</span>`;
       prompt = `<div class="vocab-prompt">
         <div class="wf-base">Họ từ của <b>${escapeHtml(cur.base.main)}</b> <span class="pos-tag">${escapeHtml(cur.base.type)}</span>
           <span class="muted">– ${escapeHtml(cur.base.short)}</span></div>
@@ -1482,7 +1482,7 @@
             const s = groupStats(x.ws);
             return `<div class="fam-row">
               <div class="fam-words">${x.ws
-                .map((w) => `<span class="fam-w st-${status(w)}" title="${escapeHtml(w.short)}">${escapeHtml(w.main)} <i>${escapeHtml(w.pos.join(","))}</i></span>`)
+                .map((w) => `<button type="button" class="fam-w st-${status(w)}" data-act="speak-key" data-key="${escapeHtml(w.key)}" data-tip="1" title="${escapeHtml(w.short)}">${escapeHtml(w.main)} <i>${escapeHtml(w.pos.join(","))}</i></button>`)
                 .join("")}</div>
               ${progressBar(s)}
               <div class="gcard-actions">
@@ -1930,7 +1930,11 @@
         return cur ? speakWord(cur.w, 0.55) : undefined;
       case "speak-key": {
         const w = byKey.get(t.dataset.key);
-        return w ? speakWord(w) : undefined;
+        if (!w) return;
+        speakWord(w);
+        // điện thoại không có tooltip khi rê chuột → hiện nghĩa bằng thông báo nhỏ
+        if (t.dataset.tip) toast(`${w.main} (${w.type || "—"}): ${w.short}`);
+        return;
       }
       case "star":
         if (cur) toggleStar(cur.w);

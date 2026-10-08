@@ -863,3 +863,55 @@ html.dark .toast { background: #e2e8f0; color: #0f172a; }
   .mode-row { grid-template-columns: 1fr 1fr; }
   .topic-map { max-height: 260px; }
 }
+
+/* ===================== Điện thoại / màn hình cảm ứng ===================== */
+button.fam-w { cursor: pointer; color: inherit; font-family: inherit; }
+
+/* Thiết bị cảm ứng: ẩn gợi ý phím tắt, nút đủ lớn để chạm */
+@media (hover: none) and (pointer: coarse) {
+  .kb, kbd { display: none !important; }
+  .btn.small,
+  .speak-btn.small,
+  .chip-sm,
+  .sel-sm,
+  .fam-w { min-height: 36px; }
+  .chip-sm, .fam-w { padding: 6px 10px; }
+  .sel-sm { padding: 6px 10px; }
+  .chip-on .x { padding: 4px 6px; font-size: 0.9rem; }
+  .q-cell { min-height: 36px; height: 36px; }
+  .topic-row { padding: 9px 10px; }
+  .dict-links a { padding: 6px 0; }
+}
+
+@media (max-width: 640px) {
+  /* iOS Safari tự phóng to khi ô nhập có chữ < 16px */
+  input[type="text"],
+  input[type="search"],
+  input[type="number"],
+  select,
+  textarea,
+  .fill-input,
+  .sel,
+  .num-input,
+  .sel-sm,
+  .wi-note textarea { font-size: 16px; }
+
+  .toolbar-right { width: 100%; }
+  .toolbar-right .sel { flex: 1 1 140px; }
+  .lesson-pick { flex: 1 1 100%; }
+  .lesson-pick .sel { flex: 1; max-width: none; }
+
+  /* Thanh chế độ cuộn ngang: mờ dần ở mép phải để biết còn nút */
+  .mode-bar {
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+    padding-right: 28px;
+  }
+
+  .exam-card { padding: 16px 14px 18px; }
+  .card-header { font-size: 0.72rem; }
+  .vocab-card { min-height: 0; }
+  .gcard-actions .btn { flex: 1 1 auto; }
+  .gtools > * { flex: 1 1 100%; }
+  .toast { bottom: 84px; }
+}
