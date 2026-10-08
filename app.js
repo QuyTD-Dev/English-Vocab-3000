@@ -5,6 +5,7 @@
   /** Đổi mỗi lần cập nhật dữ liệu để trình duyệt không dùng JSON cũ */
   const DATA_VER = "20261008_v2";
   const SRS = window.SRS;
+  const { variantsOf, normAnswer, answerMatches, fold } = window.VocabLib;
   const LESSON_SIZE = 30;
   const DAY = 86400000;
   /** Từ có khoảng ôn ≥ 21 ngày được tính là "đã thuộc" (như thẻ "mature" của Anki) */
@@ -221,22 +222,6 @@
   let lessonCount = 0;
   let spellingSet = new Set();
 
-  function variantsOf(word) {
-    const extras = word.match(/\(([^)]*)\)/g) || [];
-    const base = word.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
-    const out = [];
-    for (const part of base.split(",")) {
-      const p = part.trim();
-      if (!p) continue;
-      out.push(p);
-      for (const ex of extras) {
-        const inner = ex.slice(1, -1).trim();
-        if (/^(of|to|on|in|for|with|at)$/i.test(inner)) out.push(`${p} ${inner}`);
-      }
-    }
-    return out.length ? [...new Set(out)] : [word];
-  }
-
   function shortMeaning(m) {
     let s = (m.split(/;|\.\s/)[0] || m).trim();
     if (s.length > 72) s = s.slice(0, 70).replace(/[,\s][^,\s]*$/, "") + "…";
@@ -300,28 +285,7 @@
     };
   }
 
-  function fold(s) {
-    return String(s || "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D")
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase();
-  }
-
-  function normAnswer(s) {
-    return String(s || "")
-      .toLowerCase()
-      .replace(/[’‘`´]/g, "'")
-      .replace(/[.,!?;:"()]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function matchesWord(w, text) {
-    const t = normAnswer(text);
-    return !!t && w.variants.some((v) => normAnswer(v) === t);
-  }
+  const matchesWord = (w, text) => answerMatches(w.variants, text);
 
   const posLabel = (w) => w.pos.map((p) => POS_VI[p] || p).join(", ");
   const topicOf = (w) => topics[w.topic] || { icon: "📦", name: "Khác", id: "other" };

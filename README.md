@@ -66,6 +66,7 @@ npm test
 (hoặc `node --test "tests/*.test.js"`, cần Node 18+). Gồm:
 
 - `tests/srs.test.js`: bộ lập lịch FSRS (các bước học, thứ tự nút, xác suất nhớ đúng mục tiêu, quên, giới hạn, fuzz).
+- `tests/lib.test.js`: chấm đáp án gõ tay (bỏ qua dấu câu/hoa thường, cách viết trong ngoặc như *arrive (at, in)*, kiểm tra trên toàn bộ dữ liệu).
 - `tests/data.test.js`: dữ liệu (khóa không trùng, nghĩa/từ loại/chủ đề hợp lệ, họ từ không chồng chéo, các lỗi PDF đã sửa, bảng chuyển tiến độ bản 1).
 
 ## Tạo lại dữ liệu
