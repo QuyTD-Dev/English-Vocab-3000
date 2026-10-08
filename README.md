@@ -29,6 +29,7 @@ Giao diện kế thừa từ web ôn tập trắc nghiệm FE; phần học từ
   Danh sách nằm ở `tools/topics.py`; từ chưa có trong danh sách nào được xếp theo từ loại hoặc theo chủ đề của từ cùng họ.
 - **Họ từ** (word family, ~530 họ): nối các từ phái sinh như *success → successful → successfully → unsuccessful*, có danh sách chặn các cặp chỉ giống mặt chữ (*card/car*, *should/shoulder*…).
 - **Bộ từ của tôi**: tự tạo, thêm/bớt từ ngay ở phần thông tin từ; kèm sẵn ★ Đánh dấu và 🐛 Từ cứng đầu (quên ≥ 4 lần).
+- **Đã biết / Ẩn từ**: nút *✓ Biết rồi* trên flashcard từ mới (chấm “Dễ”, hẹn kiểm tra lại sau ~2 tuần thay vì học từ đầu); *🚫 Ẩn từ này* loại từ khỏi các phiên học, khôi phục trong nhóm 🚫 Từ đã ẩn.
 
 ## Lưu tiến độ
 

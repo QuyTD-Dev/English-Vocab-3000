@@ -967,3 +967,12 @@ button.fam-w { cursor: pointer; color: inherit; font-family: inherit; }
 .welcome h2 { margin: 0 0 8px; font-size: 1.05rem; }
 .welcome ol { margin: 0 0 10px; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; line-height: 1.5; }
 .welcome .sync-actions { margin: 0; }
+
+/* Từ đã ẩn */
+.badge.st-skip {
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--muted);
+  border-style: dashed;
+}
+.badge.st-skip:hover { color: var(--text); border-color: var(--hover-bd); }

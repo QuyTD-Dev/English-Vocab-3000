@@ -569,6 +569,8 @@
   };
   const isLeech = (w) => (cardOf(w)?.lapses || 0) >= LEECH;
   const isStarred = (w) => !!meta[w.key]?.star;
+  /** Từ người học chủ động ẩn (không đưa vào các phiên học) */
+  const isSkipped = (w) => !!meta[w.key]?.skip;
 
   function dayLog(k = dayKey()) {
     if (!daily[k]) daily[k] = { n: 0, ok: 0, bad: 0, nw: 0, rv: 0, ms: 0, extra: 0 };
@@ -713,6 +715,8 @@
         return words.filter(isLeech);
       case "star":
         return words.filter(isStarred);
+      case "skipped":
+        return words.filter(isSkipped);
       default:
         return [];
     }
@@ -737,6 +741,7 @@
     if (type === "list") return `🗂 ${lists.find((x) => x.id === val)?.name || "Bộ từ"}`;
     if (type === "leech") return "🐛 Từ cứng đầu";
     if (type === "star") return "★ Đánh dấu";
+    if (type === "skipped") return "🚫 Từ đã ẩn";
     return gid;
   }
 
@@ -782,7 +787,9 @@
 
   function scopeWords() {
     const now = Date.now();
-    const base = ui.scope === "group" ? groupWords(ui.group) : words;
+    const base = (ui.scope === "group" ? groupWords(ui.group) : words).filter(
+      (w) => !isSkipped(w) || (ui.scope === "group" && ui.group === "skipped")
+    );
     const list = base.filter(posOk);
     switch (ui.scope) {
       case "lesson":
@@ -1178,6 +1185,7 @@
         <button type="button" class="chip chip-sm" data-act="goto-group" data-g="topic:${escapeHtml(t.id)}">${t.icon} ${escapeHtml(t.name)}</button>
         <span class="chip chip-sm chip-static">Bài ${w.lesson}</span>
         ${isLeech(w) ? `<span class="badge st-leech" title="Quên từ ${LEECH} lần trở lên">🐛 Từ cứng đầu</span>` : ""}
+        <button type="button" class="chip chip-sm" data-act="skip-key" data-key="${escapeHtml(w.key)}" title="Ẩn: không đưa từ này vào các phiên học">${isSkipped(w) ? "↺ Hiện lại từ này" : "🚫 Ẩn từ này"}</button>
       </div>
       <div class="wi-meta">${memoryLine(w)}</div>
       ${familyChips(w)}
@@ -1273,6 +1281,7 @@
           )
           .join("")}</div>`
       : `<button type="button" class="btn" data-act="reverse" title="Đổi mặt trước của thẻ">${cur.reverse ? "Mặt trước: Tiếng Việt" : "Mặt trước: Tiếng Anh"} ⇄</button>
+         ${status(w) === "new" ? `<button type="button" class="btn" data-act="known" title="Đã biết từ này: hẹn kiểm tra lại sau khoảng 2 tuần thay vì học từ đầu">✓ Biết rồi</button>` : ""}
          <button type="button" class="btn primary" id="btnNext" data-act="flip">Lật thẻ</button>`;
     const st = status(w);
     const hint =
@@ -1663,7 +1672,9 @@
               <button type="button" class="btn small" data-act="speak-key" data-key="${escapeHtml(w.key)}" aria-label="Nghe ${escapeHtml(w.main)}">🔊</button>
               <span class="vword"><b lang="en">${escapeHtml(w.word)}</b> ${w.type ? `<span class="pos-tag">${escapeHtml(w.type)}</span>` : ""}<br><span class="muted">${w.ipa ? `/${escapeHtml(w.ipa)}/` : ""}</span></span>
               <span class="vmean">${escapeHtml(w.meaning)}${note ? `<br><span class="vnote">📝 ${escapeHtml(note)}</span>` : ""}</span>
-              <span class="badge st-${st}" title="${escapeHtml(memoryLine(w).replace(/<[^>]+>/g, ""))}">${STATUS_TEXT[st]}</span>
+              ${isSkipped(w)
+                ? `<button type="button" class="badge st-skip" data-act="skip-key" data-key="${escapeHtml(w.key)}" title="Bấm để hiện lại từ này">🚫 Đã ẩn ↺</button>`
+                : `<span class="badge st-${st}" title="${escapeHtml(memoryLine(w).replace(/<[^>]+>/g, ""))}">${STATUS_TEXT[st]}</span>`}
               <button type="button" class="btn small star-btn ${star ? "starred" : ""}" data-act="star-key" data-key="${escapeHtml(w.key)}" aria-label="Đánh dấu">${star ? "★" : "☆"}</button>
             </div>`;
           })
@@ -1756,6 +1767,7 @@
         <div class="ggrid">
           ${groupCard("star", "★ Đánh dấu", "Các từ bạn đã bấm ☆", groupWords("star"))}
           ${groupCard("leech", "🐛 Từ cứng đầu", `Đã quên ≥ ${LEECH} lần – nên viết ghi chú/mẹo nhớ`, groupWords("leech"))}
+          ${groupCard("skipped", "🚫 Từ đã ẩn", "Không xuất hiện khi học. Bấm 📖 Xem rồi ↺ để hiện lại", groupWords("skipped"))}
           ${lists
             .map((l) =>
               groupCard(
@@ -1955,7 +1967,7 @@
       .join("")}</optgroup>
       <optgroup label="Họ từ"><option value="families">🧬 Tất cả họ từ (học theo họ)</option>
       ${ui.group.startsWith("family:") ? `<option value="${ui.group}">${escapeHtml(groupLabel(ui.group))}</option>` : ""}</optgroup>
-      <optgroup label="Bộ từ"><option value="star">★ Đánh dấu</option><option value="leech">🐛 Từ cứng đầu</option>
+      <optgroup label="Bộ từ"><option value="star">★ Đánh dấu</option><option value="leech">🐛 Từ cứng đầu</option><option value="skipped">🚫 Từ đã ẩn</option>
       ${lists.map((l) => `<option value="list:${l.id}">🗂 ${escapeHtml(l.name)}</option>`).join("")}</optgroup>`;
     els.scopeSel.value = ui.scope;
     els.lessonSel.value = String(ui.lesson);
@@ -2220,6 +2232,33 @@
       case "star":
         if (cur) toggleStar(cur.w);
         return render();
+      case "known": {
+        if (!cur || cur.mode !== "flash" || cur.answered) return;
+        cur.answered = true;
+        const card = applyGrade(cur.w, 4, "flash", Date.now() - cur.shownAt);
+        noteResult(cur.w, true);
+        toast(`✓ “${cur.w.main}”: hẹn kiểm tra lại sau ${fmtDur(card.due - Date.now())}`);
+        return next();
+      }
+      case "skip-key": {
+        const w = byKey.get(t.dataset.key);
+        if (!w) return;
+        const m = metaOf(w);
+        if (m.skip) {
+          delete m.skip;
+          toast(`↺ Đã hiện lại “${w.main}”`);
+        } else {
+          m.skip = 1;
+          toast(`🚫 Đã ẩn “${w.main}” – khôi phục trong 📂 Nhóm từ → Bộ từ của tôi`);
+        }
+        markDirty("meta");
+        if (m.skip && cur && cur.w === w && !VIEW_MODES.has(ui.mode)) {
+          // từ đang học vừa bị ẩn → bỏ khỏi phiên và sang từ tiếp theo
+          queue = queue.filter((x, i) => i <= qpos || x !== w);
+          return next();
+        }
+        return render();
+      }
       case "star-key": {
         const w = byKey.get(t.dataset.key);
         if (w) toggleStar(w);
@@ -2736,7 +2775,10 @@
         daily = {};
       }
       mergeIn(d);
-      if (d.settings && importMode === "replace") settings = Object.assign(settings, d.settings);
+      if (d.settings && importMode === "replace") {
+        settings = Object.assign(settings, d.settings);
+        applyFontScale();
+      }
       markDirty("cards", "meta", "lists", "log", "daily", "settings");
       flush();
       if (!VIEW_MODES.has(ui.mode)) buildQueue();
