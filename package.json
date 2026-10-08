@@ -1,0 +1,9 @@
+{
+  "name": "english-vocab-3000",
+  "private": true,
+  "description": "Web học 3000 từ vựng tiếng Anh (Oxford 3000) – flashcard FSRS, nhóm từ, PWA",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "start": "python -m http.server 8000"
+  }
+}

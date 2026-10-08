@@ -53,6 +53,17 @@ python -m http.server 8000
 
 Mở `http://localhost:8000`. (Không mở trực tiếp file `index.html` vì trình duyệt chặn đọc JSON.)
 
+## Kiểm thử
+
+```bash
+npm test
+```
+
+(hoặc `node --test "tests/*.test.js"`, cần Node 18+). Gồm:
+
+- `tests/srs.test.js`: bộ lập lịch FSRS (các bước học, thứ tự nút, xác suất nhớ đúng mục tiêu, quên, giới hạn, fuzz).
+- `tests/data.test.js`: dữ liệu (khóa không trùng, nghĩa/từ loại/chủ đề hợp lệ, họ từ không chồng chéo, các lỗi PDF đã sửa, bảng chuyển tiến độ bản 1).
+
 ## Tạo lại dữ liệu
 
 `data/vocab.json` (từ, chủ đề, họ từ) và `data/legacy_v1.json` được tạo từ file PDF:
