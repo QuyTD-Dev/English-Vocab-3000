@@ -43,6 +43,7 @@
     { id: "dictation", icon: "📝", label: "Nghe – viết" },
     { id: "fill2", icon: "🔀", label: "Chính tả 2 chọn 1" },
     { id: "wordform", icon: "🧬", label: "Dạng từ" },
+    { id: "cloze", icon: "📄", label: "Điền vào câu" },
     { id: "tf", icon: "⚡", label: "Đúng / Sai nhanh" },
     { id: "match", icon: "🧩", label: "Ghép cặp" },
     { id: "speak", icon: "🎙", label: "Luyện phát âm" },
@@ -51,7 +52,7 @@
     { id: "stats", icon: "📊", label: "Thống kê" },
   ];
   /** Mã chế độ trong nhật ký ôn tập (giữ nguyên thứ tự để log cũ vẫn đúng) */
-  const MODE_CODES = ["flash", "en2vi", "vi2en", "listen", "spell", "dictation", "fill2", "tf", "match", "speak", "wordform"];
+  const MODE_CODES = ["flash", "en2vi", "vi2en", "listen", "spell", "dictation", "fill2", "tf", "match", "speak", "wordform", "cloze"];
   const MODE_TITLE = {
     flash: "Flashcard",
     en2vi: "Anh → Việt",
@@ -61,6 +62,7 @@
     dictation: "Nghe – viết",
     fill2: "Chính tả 2 chọn 1",
     wordform: "Dạng từ (word form)",
+    cloze: "Điền từ vào câu",
     tf: "Đúng / Sai nhanh",
     match: "Ghép cặp",
     speak: "Luyện phát âm",
@@ -468,13 +470,37 @@
     return dictPromises.get(w.key);
   }
 
-  function highlightWord(sentence, w) {
-    const safe = escapeHtml(sentence);
+  /** Biểu thức tìm từ (kể cả dạng chia đơn giản) trong câu ví dụ */
+  function wordRegex(w, flags) {
     // chỉ giữ cách viết gồm chữ cái, dấu nháy, dấu cách, gạch nối → không cần thoát ký tự regex
     const forms = w.variants.map((v) => v.toLowerCase()).filter((v) => /^[a-z' -]+$/.test(v));
-    if (!forms.length) return safe;
-    const re = new RegExp(`\\b(${forms.join("|")})(s|es|ed|d|ing|ly)?\\b`, "gi");
-    return safe.replace(re, "<mark>$&</mark>");
+    return forms.length ? new RegExp(`\\b(${forms.join("|")})(s|es|ed|d|ing|ly)?\\b`, flags) : null;
+  }
+
+  /** Câu ví dụ có chứa từ → { before, word, after } để làm bài điền khuyết */
+  function clozeFrom(w) {
+    const d = dictData.get(w.key);
+    const re = wordRegex(w, "i");
+    if (!d || d.error || !d.examples?.length || !re) return null;
+    for (const ex of d.examples) {
+      const m = ex.text.match(re);
+      if (m && ex.text.length >= 25) {
+        return { before: ex.text.slice(0, m.index), word: m[0], after: ex.text.slice(m.index + m[0].length) };
+      }
+    }
+    return null;
+  }
+
+  /** Tải sẵn câu ví dụ cho vài từ sắp tới trong hàng đợi */
+  function prefetchDict(n = 4) {
+    if (!settings.autoDict || !navigator.onLine) return;
+    for (const w of queue.slice(qpos + 1, qpos + 1 + n)) if (!dictData.has(w.key) && dictQuery(w)) loadDict(w);
+  }
+
+  function highlightWord(sentence, w) {
+    const safe = escapeHtml(sentence);
+    const re = wordRegex(w, "gi");
+    return re ? safe.replace(re, "<mark>$&</mark>") : safe;
   }
 
   function dictHtml(w) {
@@ -800,6 +826,7 @@
     let q = list || scopeWords();
     if (!list) {
       if (ui.mode === "wordform") q = q.filter(canWordform);
+      if (ui.mode === "cloze") q = q.filter((w) => dictQuery(w));
       const keepOrder =
         ui.mode === "flash" && (ui.scope === "lesson" || (ui.scope === "group" && /^famil/.test(ui.group)));
       if (ui.scope === "today") {
@@ -929,6 +956,7 @@
     else if (st === "learning") pool = ["en2vi", "vi2en", "vi2en", "listen", "fill2", "wordform", "tf"];
     else if (st === "young") pool = ["vi2en", "spell", "spell", "dictation", "wordform", "listen", "fill2"];
     else pool = ["spell", "dictation", "vi2en", "wordform"];
+    if (st !== "new" && clozeFrom(w)) pool.push("cloze", "cloze");
     pool = pool.filter((m) => (canSpeak || (m !== "listen" && m !== "dictation")) && (m !== "wordform" || canWordform(w)));
     return pool[Math.floor(Math.random() * pool.length)] || "en2vi";
   }
@@ -936,6 +964,30 @@
   function makeQuestion(w) {
     let mode = ui.mode === "mix" ? pickMixMode(w) : ui.mode;
     const q = { src: ui.mode, mode, w, answered: false, correct: null, shownAt: Date.now() };
+    if (mode === "cloze") {
+      const cz = clozeFrom(w);
+      if (cz) {
+        const opts = shuffle([w, ...distractors(w, 3)]);
+        q.cloze = cz;
+        q.options = opts.map((x) => x.main);
+        q.answer = opts.indexOf(w);
+        return q;
+      }
+      if (!dictData.has(w.key) && dictQuery(w) && navigator.onLine) {
+        // đang tải câu ví dụ → hiện chờ, tải xong dựng lại câu hỏi
+        q.pending = true;
+        loadDict(w).then(() => {
+          if (cur === q) {
+            cur = null;
+            render();
+          }
+        });
+        return q;
+      }
+      // không có câu ví dụ (hoặc offline) → dùng dạng Việt → Anh cho từ này
+      mode = q.mode = "vi2en";
+      q.fallback = true;
+    }
     if (mode === "wordform") {
       const ds = shuffle(wordformDistractors(w)).slice(0, 3);
       if (!ds.length) {
@@ -1144,7 +1196,7 @@
     const posText = queue.length ? `${Math.min(qpos + 1, queue.length)}/${queue.length}` : "";
     const pct = queue.length ? Math.round((qpos / queue.length) * 100) : 0;
     const mixTag = cur?.src === "mix" ? `<span class="mix-tag">🎲 ${escapeHtml(MODE_TITLE[cur.mode])}</span>` : "";
-    return `<article class="exam-card vocab-card">
+    return `<article class="exam-card vocab-card" tabindex="-1" aria-label="Thẻ câu hỏi">
       <div class="card-header">
         <span class="card-code">${escapeHtml(code)}</span>
         <span class="card-sep">|</span>
@@ -1167,7 +1219,7 @@
   function feedbackHtml(text) {
     if (!cur?.answered) return "";
     const ok = cur.correct;
-    return `<div class="card-feedback ${ok ? "ok" : "bad"}">${ok ? "✓ Chính xác!" : "✗ Chưa đúng."} ${text || ""}</div>
+    return `<div class="card-feedback ${ok ? "ok" : "bad"}" role="status">${ok ? "✓ Chính xác!" : "✗ Chưa đúng."} ${text || ""}</div>
       <div class="card-explain ${ok ? "" : "explain-wrong"}"><strong>Thông tin từ</strong>${wordInfo(cur.w)}</div>`;
   }
 
@@ -1243,7 +1295,7 @@
         ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/ ${speakBtn("🔊", "small")}</div>` : speakBtn("🔊", "small")}
         ${w.type ? `<div class="wi-pos"><span class="pos-tag">${escapeHtml(w.type)}</span></div>` : ""}</div>`;
     } else if (mode === "vi2en") {
-      hint = `Chọn từ tiếng Anh đúng<span class="kb"> (phím 1–4)</span>`;
+      hint = `${cur.fallback ? "Từ này chưa có câu ví dụ nên làm dạng Việt → Anh. " : ""}Chọn từ tiếng Anh đúng<span class="kb"> (phím 1–4)</span>`;
       prompt = `<div class="vocab-prompt"><div class="vocab-meaning-big">${escapeHtml(w.meaning)}</div>
         ${w.type ? `<div class="wi-pos"><span class="pos-tag">${escapeHtml(w.type)}</span> ${escapeHtml(posLabel(w))}</div>` : ""}</div>`;
     } else if (mode === "listen") {
@@ -1256,6 +1308,12 @@
       hint = `Điền khuyết – chọn cách viết đúng<span class="kb"> (phím 1–2)</span>`;
       prompt = `<div class="vocab-prompt"><div class="fill-sentence">“${escapeHtml(w.short)}” trong tiếng Anh là <span class="blank">${cur.answered ? escapeHtml(w.main) : "_____"}</span></div>
         ${w.ipa ? `<div class="vocab-ipa">/${escapeHtml(w.ipa)}/</div>` : ""}</div>`;
+    } else if (mode === "cloze") {
+      const cz = cur.cloze;
+      hint = `Chọn từ điền vào chỗ trống – từ trong câu có thể ở dạng chia khác (vd thêm -s, -ed)<span class="kb"> (phím 1–4)</span>`;
+      prompt = `<div class="vocab-prompt"><div class="cloze-sentence">${escapeHtml(cz.before)}<span class="blank">${
+        cur.answered ? escapeHtml(cz.word) : "_____"
+      }</span>${escapeHtml(cz.after)}</div></div>`;
     } else if (mode === "wordform") {
       const target = w.pos[0];
       hint = `Biến đổi từ – chọn đúng dạng từ loại được hỏi<span class="kb"> (phím 1–4)</span>`;
@@ -1268,7 +1326,9 @@
     const extra =
       mode === "en2vi"
         ? `Đáp án: ${escapeHtml(w.short)}`
-        : mode === "wordform"
+        : mode === "cloze"
+          ? `Đáp án: ${escapeHtml(w.main)} – ${escapeHtml(w.short)}`
+          : mode === "wordform"
           ? `${escapeHtml(w.main)} là ${escapeHtml(posLabel(w))}; ${cur.optionWords
               .filter((x) => x !== w)
               .map((x) => `${escapeHtml(x.main)} là ${escapeHtml(posLabel(x))}`)
@@ -1280,6 +1340,15 @@
       body: prompt + optionsHtml(cur.options, { big: mode !== "en2vi" }),
       nav: navNext(),
       after: feedbackHtml(cur.answered && (!cur.correct || mode === "wordform") ? extra : ""),
+    });
+  }
+
+  function renderPending() {
+    return cardShell({
+      code: MODE_TITLE.cloze.toUpperCase(),
+      hint: "",
+      body: `<div class="vocab-prompt"><p class="muted dict-loading">Đang tải câu ví dụ cho từ tiếp theo…</p></div>`,
+      nav: `<button type="button" class="btn primary" id="btnNext" data-act="next">Bỏ qua →</button>`,
     });
   }
 
@@ -1951,6 +2020,10 @@
     } else {
       const input = els.view.querySelector(".fill-input:not([disabled])");
       if (input) input.focus({ preventScroll: true });
+      else if (!document.activeElement || document.activeElement === document.body) {
+        // nút vừa bấm đã bị vẽ lại → đưa focus về thẻ câu hỏi để Tab tiếp tục được
+        els.view.querySelector(".exam-card")?.focus({ preventScroll: true });
+      }
     }
   }
 
@@ -1964,6 +2037,8 @@
       case "fill2":
       case "wordform":
         return renderChoice();
+      case "cloze":
+        return cur.pending ? renderPending() : renderChoice();
       case "spell":
       case "dictation":
         return renderTyped();
@@ -1976,6 +2051,7 @@
   }
 
   function afterShow() {
+    if (ui.mode === "cloze" || ui.mode === "mix") prefetchDict();
     const m = cur.mode;
     const token = cur;
     const say = () => {
@@ -2328,7 +2404,7 @@
       return;
     }
     if (cur.mode === "flash") {
-      if (k === " " && !cur.flipped) {
+      if ((k === " " || (k === "enter" && e.target.closest?.(".flash-card"))) && !cur.flipped) {
         e.preventDefault();
         flip();
       } else if (cur.flipped && "1234".includes(k)) gradeFlash(Number(k));

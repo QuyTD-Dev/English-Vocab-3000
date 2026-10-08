@@ -95,7 +95,8 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         const cache = await caches.open(CACHE);
         try {
-          const res = await fetch(req);
+          // luôn hỏi lại máy chủ (304 nếu không đổi) để bản cập nhật hiện ngay, không chờ hết cache HTTP
+          const res = await fetch(req.url, { cache: "no-cache", credentials: "same-origin" });
           await put(cache, new Request(new URL("./", self.registration.scope)), res.clone());
           return res;
         } catch {

@@ -933,3 +933,25 @@ button.fam-w { cursor: pointer; color: inherit; font-family: inherit; }
 .dict-ex mark { background: var(--star-bg); color: inherit; border-radius: 3px; padding: 0 2px; font-weight: 700; }
 .dict-src { margin: 0; font-size: 0.68rem; color: var(--muted); }
 .dict-loading { margin: 0; font-size: 0.8rem; }
+
+/* Điền từ vào câu */
+.cloze-sentence {
+  font-size: clamp(1.05rem, 3.2vw, 1.25rem);
+  line-height: 1.7;
+  max-width: 640px;
+  font-style: italic;
+}
+.cloze-sentence .blank { font-style: normal; }
+
+/* Thẻ câu hỏi nhận focus bằng script (không cần viền) */
+.exam-card:focus { outline: none; }
+.exam-card:focus-visible { box-shadow: 0 0 0 2px var(--pick-b); }
+
+/* Ô chọn trong thanh công cụ được phép co lại (tránh tràn ngang trên màn hình rất hẹp) */
+.toolbar-right { min-width: 0; max-width: 100%; }
+.toolbar-right .sel { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.lesson-pick { min-width: 0; max-width: 100%; }
+.lesson-pick .sel { min-width: 0; flex: 1 1 auto; }
+@media (max-width: 640px) {
+  .lesson-pick { display: flex; width: 100%; }
+}

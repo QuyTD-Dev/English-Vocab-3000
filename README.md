@@ -15,6 +15,7 @@ Giao diện kế thừa từ web ôn tập trắc nghiệm FE; phần học từ
 | ✍️ Gõ từ · 📝 Nghe – viết | Tự gõ lại từ; dùng gợi ý thì lượt đó tính là “Khó” |
 | 🔀 Chính tả 2 chọn 1 | Điền khuyết: chọn cách viết đúng giữa từ thật và một lỗi chính tả hay gặp |
 | 🧬 Dạng từ | Biến đổi từ trong cùng họ: chọn dạng danh/động/tính/trạng từ |
+| 📄 Điền vào câu | Câu ví dụ thật (Wiktionary) bị khoét trống từ cần học; chọn 1 trong 4 từ. Tải sẵn câu cho các từ sắp tới; offline hoặc từ không có ví dụ thì chuyển sang Việt → Anh |
 | ⚡ Đúng / Sai nhanh · 🧩 Ghép cặp | Luyện phản xạ, trò chơi ghép 6 cặp từ – nghĩa |
 | 🎙 Luyện phát âm | Đọc to, trình duyệt nhận dạng giọng nói để chấm (Chrome / Edge) |
 | 📂 Nhóm từ | Học theo **chủ đề**, **họ từ** hoặc **bộ từ tự tạo** |
