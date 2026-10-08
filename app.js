@@ -13,6 +13,8 @@
   const LEECH = 4;
   /** Trả lời trắc nghiệm đúng nhưng quá chậm (ms) thì tính là "Khó" */
   const SLOW_MS = 15000;
+  /** Từ đang ở bước học ngắn (phút) được coi như đến hạn nếu còn ≤ 20 phút (như "learn ahead" của Anki) */
+  const LEARN_AHEAD = 20 * 60000;
   const MATCH_SIZE = 6;
   const LIST_PAGE = 100;
   const LOG_CAP = 30000;
@@ -144,7 +146,7 @@
   let settings = Object.assign(
     {
       accent: "en-US", voice: "", rate: 0.9, goal: 20, maxReviews: 200, retention: 0.9,
-      newOrder: "alpha", dayStartHour: 4, autoSpeak: true, autoNext: true,
+      newOrder: "alpha", dayStartHour: 4, autoSpeak: true, autoNext: true, autoDict: true,
     },
     load(KEY.settings, {})
   );
@@ -378,6 +380,147 @@
   }
   const speakWord = (w, rate) => speak(spokenText(w), rate);
 
+  // ================================================================ câu ví dụ & giọng người thật
+  /**
+   * Câu ví dụ / định nghĩa tiếng Anh: Wiktionary REST API (ổn định, cho phép gọi từ trình duyệt).
+   * Giọng đọc thu âm: Free Dictionary API (không ổn định → chỉ thử trong 5 giây, lỗi thì bỏ qua).
+   * Chỉ gửi đi chính từ tiếng Anh cần tra.
+   */
+  const WIKT_API = "https://en.wiktionary.org/api/rest_v1/page/definition/";
+  const DICT_API = "https://api.dictionaryapi.dev/api/v2/entries/en/";
+  const dictPromises = new Map();
+  /** key từ → { audio, examples, defs } hoặc { error: true } */
+  const dictData = new Map();
+
+  function dictQuery(w) {
+    const q = w.main.toLowerCase().replace(/\b(sth|sb)\b/g, "").replace(/\s+/g, " ").trim();
+    return /^[a-z][a-z' -]*[a-z]$/.test(q) ? q : null;
+  }
+
+  function fetchWithTimeout(url, ms) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), ms);
+    return fetch(url, { signal: ac.signal }).finally(() => clearTimeout(timer));
+  }
+
+  const htmlText = (html) => new DOMParser().parseFromString(String(html || ""), "text/html").body.textContent.replace(/\s+/g, " ").trim();
+
+  async function fetchWiktionary(q) {
+    const res = await fetchWithTimeout(WIKT_API + encodeURIComponent(q.replace(/ /g, "_")), 6000);
+    if (res.status === 404) return { examples: [], defs: [] };
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const out = { examples: [], defs: [] };
+    for (const e of json.en || []) {
+      const pos = (e.partOfSpeech || "").toLowerCase();
+      for (const d of e.definitions || []) {
+        const def = htmlText(d.definition);
+        if (def && out.defs.length < 3) out.defs.push({ pos, text: def });
+        const exs = [...(d.parsedExamples || []).map((x) => x.example), ...(d.examples || [])];
+        for (const raw of exs) {
+          const text = htmlText(raw);
+          if (text && text.length <= 200 && out.examples.length < 4 && !out.examples.some((x) => x.text === text)) {
+            out.examples.push({ pos, text });
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  async function fetchAudio(q) {
+    try {
+      const res = await fetchWithTimeout(DICT_API + encodeURIComponent(q), 5000);
+      if (!res.ok) return {};
+      const audio = {};
+      for (const e of (await res.json()) || []) {
+        for (const p of e.phonetics || []) {
+          if (!p.audio) continue;
+          const acc = /-uk\.mp3$/.test(p.audio) ? "uk" : /-us\.mp3$/.test(p.audio) ? "us" : /-au\.mp3$/.test(p.audio) ? "au" : "other";
+          if (!audio[acc]) audio[acc] = p.audio;
+        }
+      }
+      return audio;
+    } catch {
+      return {};
+    }
+  }
+
+  function loadDict(w) {
+    const q = dictQuery(w);
+    if (!q || !navigator.onLine) return Promise.resolve(null);
+    if (!dictPromises.has(w.key)) {
+      const p = Promise.allSettled([fetchWiktionary(q), fetchAudio(q)]).then(([wk, au]) => {
+        const audio = au.status === "fulfilled" ? au.value : {};
+        const res =
+          wk.status === "fulfilled"
+            ? { audio, examples: wk.value.examples, defs: wk.value.defs }
+            : Object.keys(audio).length
+              ? { audio, examples: [], defs: [] }
+              : { error: true };
+        dictData.set(w.key, res);
+        if (res.error) dictPromises.delete(w.key); // cho phép thử lại
+        fillDict(w);
+        return res;
+      });
+      dictPromises.set(w.key, p);
+    }
+    return dictPromises.get(w.key);
+  }
+
+  function highlightWord(sentence, w) {
+    const safe = escapeHtml(sentence);
+    // chỉ giữ cách viết gồm chữ cái, dấu nháy, dấu cách, gạch nối → không cần thoát ký tự regex
+    const forms = w.variants.map((v) => v.toLowerCase()).filter((v) => /^[a-z' -]+$/.test(v));
+    if (!forms.length) return safe;
+    const re = new RegExp(`\\b(${forms.join("|")})(s|es|ed|d|ing|ly)?\\b`, "gi");
+    return safe.replace(re, "<mark>$&</mark>");
+  }
+
+  function dictHtml(w) {
+    if (!dictQuery(w)) return "";
+    if (!dictData.has(w.key)) {
+      return settings.autoDict && navigator.onLine
+        ? `<p class="muted dict-loading">Đang tải câu ví dụ…</p>`
+        : `<button type="button" class="btn small" data-act="dict-load" data-key="${escapeHtml(w.key)}">📚 Xem câu ví dụ & giọng người thật</button>`;
+    }
+    const d = dictData.get(w.key);
+    if (!d || d.error) {
+      return `<p class="muted dict-loading">Không tải được câu ví dụ (mạng chập chờn).
+        <button type="button" class="btn small" data-act="dict-load" data-key="${escapeHtml(w.key)}">↻ Thử lại</button></p>`;
+    }
+    if (!d.examples.length && !d.defs.length && !Object.keys(d.audio).length) return `<p class="muted dict-loading">Chưa có câu ví dụ cho từ này.</p>`;
+    const accName = { us: "Mỹ", uk: "Anh", au: "Úc", other: "người thật" };
+    const audio = Object.entries(d.audio)
+      .map(([acc, src]) => `<button type="button" class="btn small" data-act="dict-audio" data-src="${escapeHtml(src)}" title="Giọng đọc thu âm">🔈 ${accName[acc]}</button>`)
+      .join("");
+    const ex = d.examples.length
+      ? `<ul class="dict-ex">${d.examples.map((e) => `<li><span class="pos-tag">${escapeHtml(e.pos)}</span> ${highlightWord(e.text, w)}</li>`).join("")}</ul>`
+      : "";
+    const defs = !d.examples.length && d.defs.length
+      ? `<ul class="dict-ex">${d.defs.map((e) => `<li><span class="pos-tag">${escapeHtml(e.pos)}</span> ${escapeHtml(e.text)}</li>`).join("")}</ul>`
+      : "";
+    return `${audio ? `<div class="dict-audio">${audio}</div>` : ""}${ex}${defs}
+      <p class="dict-src">${d.examples.length || d.defs.length ? "Ví dụ: Wiktionary (CC BY-SA)" : ""}${Object.keys(d.audio).length ? `${d.examples.length || d.defs.length ? " · " : ""}giọng thu âm: Free Dictionary API` : ""}</p>`;
+  }
+
+  function fillDict(w) {
+    document.querySelectorAll(`.wi-dict[data-key="${CSS.escape(w.key)}"]`).forEach((el) => {
+      el.innerHTML = dictHtml(w);
+    });
+  }
+
+  let dictAudio = null;
+  function playAudio(src) {
+    try {
+      dictAudio?.pause();
+      dictAudio = new Audio(src);
+      dictAudio.play().catch(() => toast("Không phát được âm thanh."));
+    } catch {
+      toast("Không phát được âm thanh.");
+    }
+  }
+
   // ================================================================ trạng thái ghi nhớ
   const cardOf = (w) => cards[w.key] || null;
   const metaOf = (w) => meta[w.key] || (meta[w.key] = {});
@@ -387,6 +530,12 @@
     if (!c || !c.st) return "new";
     if (c.st !== SRS.State.Review) return "learning";
     return c.ivl >= MATURE_IVL ? "mastered" : "young";
+  }
+  /** Đến hạn để chấm điểm: đã quá hạn, hoặc đang ở bước học ngắn và sắp tới hạn */
+  function dueForStudy(c, now = Date.now()) {
+    if (!c || !c.st) return true;
+    if (c.due <= now) return true;
+    return c.st !== SRS.State.Review && c.due - now <= LEARN_AHEAD;
   }
   const isDue = (w, now = Date.now()) => {
     const c = cardOf(w);
@@ -503,7 +652,7 @@
    */
   function recordAnswer(w, correct, mode, { hints = 0, ms = 0 } = {}) {
     const c = cardOf(w);
-    const due = !c || !c.st || c.due <= Date.now();
+    const due = dueForStudy(c);
     if (mode === "speak") return correct && due ? applyGrade(w, 3, mode, ms) : logOnly(w, mode, correct, ms);
     if (!correct) return applyGrade(w, 1, mode, ms);
     if (!due) return logOnly(w, mode, true, ms);
@@ -983,6 +1132,7 @@
       <label class="wi-note">📝 Ghi chú / câu ví dụ / mẹo nhớ của bạn
         <textarea data-note="${escapeHtml(w.key)}" rows="2" placeholder="Tự đặt một câu với từ này, hoặc ghi mẹo nhớ…">${escapeHtml(note)}</textarea>
       </label>
+      <div class="wi-dict" data-key="${escapeHtml(w.key)}">${dictHtml(w)}</div>
       ${listControls(w)}
       ${dictLinks(w)}
     </div>`;
@@ -1076,7 +1226,7 @@
     const hint =
       st === "new"
         ? "🆕 Từ mới – đọc to, đoán nghĩa rồi lật thẻ"
-        : isDue(w)
+        : dueForStudy(cardOf(w))
           ? `⏰ Đến hạn ôn – ${memoryLine(w).split(" · ")[0]}`
           : "🔁 Ôn thêm (chưa đến hạn) – ôn sớm hầu như không làm giãn lịch ôn, FSRS chỉ tăng độ bền khi bạn nhớ được sau một thời gian";
     return cardShell({ code: "FLASHCARD", hint, body, nav });
@@ -1786,6 +1936,12 @@
     const active = document.activeElement;
     const keepFocusId = active && (active.id === "listSearch" || active.id === "famSearch") ? active.id : null;
     els.view.innerHTML = html;
+    if (settings.autoDict) {
+      els.view.querySelectorAll(".wi-dict").forEach((el) => {
+        const w = byKey.get(el.dataset.key);
+        if (w && !dictData.has(w.key)) loadDict(w);
+      });
+    }
     if (keepFocusId) {
       const inp = $(keepFocusId);
       if (inp) {
@@ -1928,6 +2084,18 @@
         return cur ? speakWord(cur.w) : undefined;
       case "slow":
         return cur ? speakWord(cur.w, 0.55) : undefined;
+      case "dict-load": {
+        const w = byKey.get(t.dataset.key);
+        if (w) {
+          if (!navigator.onLine) return toast("Cần có mạng để tải câu ví dụ.");
+          dictData.delete(w.key);
+          t.closest(".wi-dict").innerHTML = `<p class="muted dict-loading">Đang tải câu ví dụ…</p>`;
+          loadDict(w);
+        }
+        return;
+      }
+      case "dict-audio":
+        return playAudio(t.dataset.src);
       case "speak-key": {
         const w = byKey.get(t.dataset.key);
         if (!w) return;
@@ -2245,6 +2413,7 @@
     $("setDayStart").value = String(settings.dayStartHour);
     $("setAutoSpeak").checked = settings.autoSpeak;
     $("setAutoNext").checked = settings.autoNext;
+    $("setAutoDict").checked = settings.autoDict;
     retentionNote();
     fillVoices();
     openModal("settingsModal");
@@ -2292,6 +2461,7 @@
   });
   onSetting("setAutoSpeak", "change", (t) => (settings.autoSpeak = t.checked));
   onSetting("setAutoNext", "change", (t) => (settings.autoNext = t.checked));
+  onSetting("setAutoDict", "change", (t) => (settings.autoDict = t.checked));
   $("btnTestVoice").addEventListener("click", () => speak("Hello! Let's learn three thousand English words together."));
 
   // ---- sao lưu

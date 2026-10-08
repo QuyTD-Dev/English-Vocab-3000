@@ -20,6 +20,8 @@ Giao diện kế thừa từ web ôn tập trắc nghiệm FE; phần học từ
 | 📂 Nhóm từ | Học theo **chủ đề**, **họ từ** hoặc **bộ từ tự tạo** |
 | 📖 Danh sách · 📊 Thống kê | Tra cứu (cả ghi chú), dự báo lịch ôn, lịch học, tỉ lệ nhớ thực tế, hiệu quả từng cách học |
 
+**Câu ví dụ tiếng Anh**: sau mỗi câu, phần thông tin từ tự tải câu ví dụ / định nghĩa từ Wiktionary (REST API) và, nếu có, giọng đọc thu âm từ Free Dictionary API. Chỉ chính từ tiếng Anh được gửi đi; tắt được trong ⚙️. Mạng chập chờn thì hiện nút *Thử lại*, các chế độ học vẫn chạy bình thường khi offline.
+
 ## Phân loại từ
 
 - **Chủ đề** (~30 nhóm): thời gian, con người, cơ thể & sức khỏe, ăn uống, công việc, tiền bạc, giao thông, thiên nhiên, cảm xúc, tư duy… Mỗi từ thuộc một chủ đề chính.

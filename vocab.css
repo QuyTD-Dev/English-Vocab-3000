@@ -923,3 +923,13 @@ button.fam-w { cursor: pointer; color: inherit; font-family: inherit; }
   color: var(--primary);
   font-weight: 700;
 }
+
+/* Câu ví dụ & giọng người thật (Free Dictionary API) */
+.wi-dict { display: flex; flex-direction: column; gap: 6px; }
+.wi-dict:empty { display: none; }
+.dict-audio { display: flex; flex-wrap: wrap; gap: 6px; }
+.dict-ex { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; line-height: 1.45; }
+.dict-ex .pos-tag { font-size: 0.66rem; margin-right: 2px; }
+.dict-ex mark { background: var(--star-bg); color: inherit; border-radius: 3px; padding: 0 2px; font-weight: 700; }
+.dict-src { margin: 0; font-size: 0.68rem; color: var(--muted); }
+.dict-loading { margin: 0; font-size: 0.8rem; }
