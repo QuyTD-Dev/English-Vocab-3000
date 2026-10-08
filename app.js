@@ -2540,5 +2540,50 @@
     ui.lesson = Math.min(lessonCount, Math.max(1, ui.lesson || 1));
     if (!VIEW_MODES.has(ui.mode)) buildQueue();
     render();
+    setupPwa();
   })();
+
+  // ================================================================ cài app & offline (PWA)
+  function setupPwa() {
+    const okOrigin = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if ("serviceWorker" in navigator && okOrigin) {
+      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker
+        .register("sw.js")
+        .then(() => navigator.serviceWorker.ready)
+        .then((reg) => {
+          // lưu sẵn dữ liệu từ vựng để mở được khi không có mạng
+          reg.active?.postMessage({
+            type: "precache",
+            urls: [`data/vocab.json?v=${DATA_VER}`, `data/legacy_v1.json?v=${DATA_VER}`],
+          });
+        })
+        .catch((err) => console.warn("Không đăng ký được service worker", err));
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadController) toast("🔄 Đã có phiên bản mới – tải lại trang để dùng bản mới nhất.", 6000);
+      });
+    }
+
+    const btn = $("btnInstall");
+    let deferred = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false;
+    });
+    btn.addEventListener("click", async () => {
+      if (!deferred) return;
+      deferred.prompt();
+      const choice = await deferred.userChoice.catch(() => null);
+      deferred = null;
+      btn.hidden = true;
+      if (choice?.outcome === "accepted") toast("📲 Đã cài app – mở từ màn hình chính để học cả khi offline.");
+    });
+    window.addEventListener("appinstalled", () => {
+      btn.hidden = true;
+    });
+
+    window.addEventListener("offline", () => toast("📴 Đang offline – vẫn học bình thường, tiến độ lưu trên máy."));
+    window.addEventListener("online", () => toast("🌐 Đã có mạng trở lại."));
+  }
 })();

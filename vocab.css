@@ -915,3 +915,11 @@ button.fam-w { cursor: pointer; color: inherit; font-family: inherit; }
   .gtools > * { flex: 1 1 100%; }
   .toast { bottom: 84px; }
 }
+
+/* Nút cài app (PWA) */
+.install-btn[hidden] { display: none; }
+.btn.install-btn {
+  border-color: var(--pick-b);
+  color: var(--primary);
+  font-weight: 700;
+}

@@ -7,6 +7,14 @@
   <meta name="description" content="Học 3000 từ vựng tiếng Anh thông dụng (Oxford 3000) theo chủ đề và họ từ, lịch ôn FSRS, flashcard, trắc nghiệm, nghe, chính tả, dạng từ, ghép cặp và luyện phát âm." />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="3000 Từ" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <script>
     /* Áp theme trước khi vẽ để tránh nháy màn hình */
     (function () {
@@ -20,7 +28,7 @@
     })();
   </script>
   <link rel="stylesheet" href="style.css?v=20261008_v2" />
-  <link rel="stylesheet" href="vocab.css?v=20261008_v3" />
+  <link rel="stylesheet" href="vocab.css?v=20261008_v4" />
 </head>
 <body>
   <div class="app">
@@ -30,6 +38,7 @@
         <span class="brand-sub" id="brandSub">Tiếng Anh thông dụng · Oxford 3000</span>
       </div>
       <div class="top-actions">
+        <button type="button" class="btn ghost install-btn" id="btnInstall" title="Cài như ứng dụng trên máy" hidden>📲 Cài app</button>
         <button type="button" class="btn ghost" id="btnSearch" title="Tra cứu từ (Ctrl+K)" aria-label="Tra cứu từ">🔍</button>
         <button type="button" class="btn ghost" id="btnHelp" title="Cách học hiệu quả" aria-label="Cách học hiệu quả">💡</button>
         <button type="button" class="btn ghost" id="btnSettings" title="Cài đặt giọng đọc, mục tiêu &amp; lịch ôn" aria-label="Cài đặt">⚙️</button>
@@ -197,6 +206,12 @@
         <p><b>5. Trộn nhiều cách học.</b> 🎲 <i>Trộn ngẫu nhiên</i> chọn dạng bài theo mức độ nhớ: từ mới thì nhận diện (Anh → Việt, nghe), từ đã quen thì phải tự nhớ ra (gõ từ, nghe – viết, dạng từ). Đổi dạng bài liên tục giúp nhớ chắc hơn học một kiểu.</p>
         <p><b>6. Đặt từ vào ngữ cảnh và tự ghi chú.</b> Sau mỗi câu, mở <i>Cambridge</i> / <i>Oxford</i> xem ví dụ, hoặc <i>YouGlish</i> để nghe người bản xứ dùng từ. Viết một câu của riêng bạn vào ô <i>📝 Ghi chú</i>; ghi chú cũng tra cứu được trong 📖 Danh sách.</p>
         <p><b>7. Xử lý “từ cứng đầu”.</b> Từ quên từ 4 lần trở lên được đánh dấu 🐛. Với những từ này, hãy viết mẹo nhớ hoặc liên tưởng hình ảnh rồi luyện riêng trong 📂 Nhóm từ → Bộ từ của tôi.</p>
+        <h3>📲 Cài như ứng dụng, học cả khi không có mạng</h3>
+        <ul class="kbd-list">
+          <li><b>Android / máy tính (Chrome, Edge):</b> bấm nút <i>📲 Cài app</i> trên thanh trên cùng, hoặc menu ⋮ → <i>Cài đặt ứng dụng</i>.</li>
+          <li><b>iPhone / iPad (Safari):</b> bấm nút Chia sẻ <span aria-hidden="true">⎋</span> → <i>Thêm vào MH chính</i>.</li>
+          <li>Sau lần mở đầu tiên, web hoạt động cả khi offline; tiến độ vẫn lưu trên máy.</li>
+        </ul>
         <h3>Phím tắt</h3>
         <ul class="kbd-list">
           <li><kbd>1</kbd>–<kbd>4</kbd> hoặc <kbd>A</kbd>–<kbd>D</kbd>: chọn đáp án · chấm Quên/Khó/Nhớ/Dễ ở flashcard</li>
@@ -209,6 +224,6 @@
   </div>
 
   <script src="srs.js?v=20261008_v2"></script>
-  <script src="app.js?v=20261008_v4"></script>
+  <script src="app.js?v=20261008_v5"></script>
 </body>
 </html>

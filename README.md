@@ -37,6 +37,14 @@ Giao diện kế thừa từ web ôn tập trắc nghiệm FE; phần học từ
 - Hoàn tác lượt trả lời (↶ / Ctrl+Z); tự lưu bản sao mỗi ngày để khôi phục; xin trình duyệt lưu bền vững.
 - Xuất / nhập file JSON. **Nhập & gộp** giữ bản ôn gần nhất của từng từ, nên học trên nhiều máy rồi gộp lại không mất dữ liệu.
 
+## Cài như ứng dụng (PWA), học offline
+
+- **Android / máy tính (Chrome, Edge):** nút **📲 Cài app** trên thanh trên cùng (hoặc menu ⋮ → *Cài đặt ứng dụng*).
+- **iPhone / iPad (Safari):** Chia sẻ → *Thêm vào MH chính*.
+- `sw.js` lưu sẵn trang, CSS/JS, dữ liệu từ vựng và biểu tượng; sau lần mở đầu tiên web chạy được khi không có mạng.
+  Danh sách file được đọc từ `index.html` nên chỉ cần đổi số phiên bản `?v=` khi cập nhật.
+- Biểu tượng tạo bằng `python tools/make_icons.py` (cần Pillow).
+
 ## Chạy trên máy
 
 ```bash
